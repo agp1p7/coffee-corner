@@ -125,11 +125,99 @@ if(version&&version.textContent.includes('網站測試版')){
  const badge=document.createElement('span');badge.id='coffeeLayoutStatus';version.after(badge);
  if(typeof window!=='undefined'&&window.matchMedia){
   const phone=window.matchMedia('(max-width:599px)'),tablet=window.matchMedia('(max-width:1023px)'),portrait=window.matchMedia('(orientation:portrait)');
-  const update=()=>{badge.textContent=(phone.matches?'手機窄螢幕':tablet.matches?'平板／中型視窗':'寬螢幕雙欄')+' · '+(portrait.matches?'直向':'橫向');};
+  const update=()=>{badge.textContent=(phone.matches?'手機窄螢幕':tablet.matches?'平板／中型視窗':'寬螢幕')+' · '+(portrait.matches?'直向':'橫向');};
   for(const media of [phone,tablet,portrait]){
    if(media.addEventListener)media.addEventListener('change',update);else if(media.addListener)media.addListener(update);
   }
   update();
  }
 }
+})();
+(function(){
+'use strict';
+if(typeof document==='undefined'||document.getElementById('guide'))return;
+const main=document.querySelector('main'),brew=document.getElementById('brew'),grid=document.querySelector('#brew>.grid'),nav=document.querySelector('nav');
+const recipe=document.getElementById('coffeeRecipePanel'),timer=document.getElementById('coffeeTimerPanel');
+if(!main||!brew||!grid||!nav||!recipe||!timer)return;
+function make(tag,text){const x=document.createElement(tag);if(text!==undefined)x.textContent=text;return x;}
+const guide=make('section');guide.id='guide';guide.hidden=true;
+const heading=make('h2','引導沖煮');heading.tabIndex=-1;
+const summary=make('p');summary.id='coffeeGuideRecipe';summary.className='box';
+const back=make('button','← 返回配方');back.type='button';
+const note=make('p','返回配方不會停止計時；若要修改沖煮中的參數，請先重設。');note.className='hint';
+const panels=make('div');panels.className='coffee-guide-grid';
+const review=make('article');review.id='coffeeReviewPanel';review.className='card';
+const tasteHeading=Array.from(timer.children).find(x=>x.tagName==='H2'&&x.textContent.includes('這杯'));
+if(tasteHeading){let item=tasteHeading;while(item){const next=item.nextSibling;review.append(item);item=next;}}
+panels.append(timer);if(review.children.length)panels.append(review);
+guide.append(back,heading,summary,note,panels);brew.after(guide);
+const oldJumps=document.querySelector('.coffee-jumps');if(oldJumps)oldJumps.remove();
+const entry=make('div');entry.className='coffee-guide-entry';
+const enter=make('button','進入沖煮 →');enter.type='button';enter.id='coffeeEnterGuide';
+const entryNote=make('p','選好或調整配方後進入。草稿也能沖煮；進入頁面不會自動開始計時，也不會自動儲存配方。');entryNote.className='hint';entry.append(enter,entryNote);
+const picker=document.getElementById('recipePicker');if(picker)picker.after(entry);else recipe.append(entry);
+const guideTab=make('button','引導沖煮');guideTab.type='button';guideTab.dataset.tab='guide';
+const recipeTab=Array.from(nav.querySelectorAll('button')).find(x=>x.dataset.tab==='brew');
+if(recipeTab){recipeTab.textContent='配方';recipeTab.after(guideTab);}else nav.append(guideTab);
+const live=document.getElementById('live');if(live&&timer.contains(live)){const d=make('details');d.id='coffeeGuideSteps';d.append(make('summary','完整沖煮步驟'));live.before(d);d.append(live);}
+const statsNode=document.getElementById('stats');if(statsNode&&timer.contains(statsNode)){const d=make('details');d.id='coffeeGuideStats';d.append(make('summary','配方摘要與粉水比'));statsNode.before(d);d.append(statsNode);}
+const allowed=new Set(['brew','guide','history','settings']);
+function go(id,push=true){
+ if(!allowed.has(id))id='brew';
+ if(id==='guide'&&!run){
+  const form=document.getElementById('form');
+  if(!form.checkValidity()||!vr(read())){go('brew',push);valid();return;}
+ }
+ if(id==='guide'){
+  const r=run||read(),x=m(r);
+  summary.textContent=r.name+' · '+(r.dripper||r.method)+'\n'+r.dose+' g 粉 · '+x.water+' g 萃取水 · '+r.temp+'°C';
+  statsUpdate();
+ }
+ document.querySelectorAll('main>section').forEach(x=>x.hidden=x.id!==id);
+ nav.querySelectorAll('button').forEach(x=>{const current=x.dataset.tab===id;x.classList.toggle('coffee-current-tab',current);if(current)x.setAttribute('aria-current','page');else x.removeAttribute('aria-current');});
+ if(id==='history')logs();
+ if(typeof window!=='undefined'){
+  if(push&&window.history&&window.location.hash!=='#'+id){try{window.history.pushState({coffeePage:id},'','#'+id);}catch(error){}}
+ }
+}
+function statsUpdate(){stats();render();}
+enter.onclick=()=>{go('guide');if(!guide.hidden){heading.focus({preventScroll:true});guide.scrollIntoView({block:'start'});}};
+back.onclick=()=>go('brew');
+nav.querySelectorAll('button').forEach(x=>x.onclick=()=>go(x.dataset.tab));
+const originalSaveCup=document.getElementById('saveCup').onclick;
+document.getElementById('saveCup').onclick=function(event){const before=db.cups.length;originalSaveCup.call(this,event);if(db.cups.length>before&&store)go('history');};
+const style=make('style');style.id='coffeeGuidePageStyle';
+style.textContent=String.raw`html{scroll-padding-top:var(--coffeeNavHeight,132px)}
+#brew>.grid{display:block!important;max-width:1100px;margin:0 auto}
+#guide,#coffeeRecipePanel,#coffeeTimerPanel,#coffeeReviewPanel{scroll-margin-top:var(--coffeeNavHeight,132px)}
+#guide .coffee-guide-grid{display:grid;grid-template-columns:minmax(0,1fr);gap:20px;align-items:start}
+#guide .coffee-guide-grid>#coffeeTimerPanel{position:static;max-height:none;overflow:visible;order:0}
+#coffeeReviewPanel{min-width:0;order:1}
+#coffeeGuideRecipe{margin:12px 0;font-size:18px;white-space:pre-wrap}
+.coffee-guide-entry{margin:14px 0 20px}
+#coffeeEnterGuide{width:100%;margin:0;background:#fff;color:#111;min-height:54px}
+nav{display:grid;grid-template-columns:repeat(4,minmax(0,1fr))}
+nav button{min-width:0!important;width:100%;white-space:normal}
+nav button.coffee-current-tab{background:#fff;color:#111}
+#guide #timer{font-size:clamp(4.5rem,12vw,8rem)}
+#coffeeGuideSteps,#coffeeGuideStats{padding:8px 0}
+@media(min-width:1024px){#guide .coffee-guide-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:599px){
+ nav{grid-template-columns:repeat(2,minmax(0,1fr))}
+ #guide .coffee-guide-grid{gap:14px}
+ #coffeeEnterGuide,#guide #saveCup{width:100%}
+ #comparison tr:first-child{display:none}
+ #comparison td::before{display:block;color:#bbb;font-size:14px;margin-bottom:8px}
+ #comparison td:nth-of-type(1)::before{content:'第一杯'}
+ #comparison td:nth-of-type(2)::before{content:'第二杯'}
+}`;
+document.head.append(style);
+const version=document.querySelector('small');if(version&&version.textContent.includes('網站測試版'))version.textContent='2.4.0 網站測試版 · 黑白芫荽';
+function navSize(){document.documentElement.style.setProperty('--coffeeNavHeight',(nav.getBoundingClientRect().height+12)+'px');}
+navSize();
+if(typeof ResizeObserver!=='undefined'){const observer=new ResizeObserver(navSize);observer.observe(nav);}
+else if(typeof window!=='undefined')window.addEventListener('resize',navSize,{passive:true});
+function fromHash(){return typeof window!=='undefined'?window.location.hash.slice(1):'brew';}
+if(typeof window!=='undefined'){window.addEventListener('popstate',()=>go(fromHash(),false));window.addEventListener('hashchange',()=>go(fromHash(),false));}
+go(fromHash()||'brew',false);
 })();
