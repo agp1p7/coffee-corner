@@ -1,0 +1,58 @@
+name: Fix recipe draft creation
+on:
+  push:
+    branches: [main]
+    paths:
+      - recipe-draft-fix.js
+      - tests/recipe-draft-fix.test.cjs
+      - .github/workflows/fix-recipe-drafts.yml
+  workflow_dispatch:
+permissions:
+  contents: write
+  pages: write
+concurrency:
+  group: recipe-draft-fix
+  cancel-in-progress: false
+jobs:
+  fix:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Check patch and regression tests
+        run: |
+          node --check recipe-draft-fix.js
+          node tests/recipe-draft-fix.test.cjs
+      - name: Install narrowly scoped patch
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import subprocess
+          p = Path('index.html')
+          text = p.read_text(encoding='utf-8')
+          marker = '<script src="./recipe-draft-fix.js"></script>'
+          if marker not in text:
+              sha = subprocess.check_output(['git', 'hash-object', 'index.html'], text=True).strip()
+              if sha != '7ae166fb06cc7e32db1e0da4f669e429a751acb3':
+                  raise SystemExit('Homepage changed since review; stopping without editing index.html.')
+              if text.count('</script></html>') != 1:
+                  raise SystemExit('Unexpected homepage structure; stopping.')
+              text = text.replace('</script></html>', '</script>' + marker + '</html>')
+              text = text.replace('2.2 網站測試版', '2.2.1 網站測試版', 1)
+              p.write_text(text, encoding='utf-8')
+          PY
+      - name: Commit only homepage hook
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add index.html
+          if ! git diff --cached --quiet; then
+            git commit -m "Fix repeated recipe creation with unsaved drafts"
+            git push origin HEAD:main
+          fi
+      - name: Request Pages rebuild
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh api --method POST repos/agp1p7/coffee-corner/pages/builds
