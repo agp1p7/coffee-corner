@@ -30,3 +30,22 @@ $('deleteRecipe').onclick=()=>{if(!drafts.has(selected)){originalDelete();return
 $('add').textContent='手沖草稿';$('aero').textContent='愛樂壓草稿';
 load();
 })();
+(function(){
+'use strict';
+if(typeof document==='undefined')return;
+const select=document.getElementById('recipes'),button=document.getElementById('deleteRecipe');
+if(!select||!button||document.getElementById('recipePicker'))return;
+const label=select.parentElement;
+if(!label||label.tagName!=='LABEL')return;
+const row=document.createElement('div');row.id='recipePicker';
+row.style.cssText='display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px;align-items:stretch;margin:8px 0 16px;';
+label.after(row);row.append(select,button);
+label.textContent='已存配方';label.htmlFor='recipes';
+select.style.minWidth='0';
+button.type='button';button.textContent='刪除';
+button.title='刪除目前選取的配方，不刪除沖煮紀錄';
+button.setAttribute('aria-label','刪除目前選取的配方');
+button.style.margin='0';button.style.whiteSpace='nowrap';
+const version=document.querySelector('small');
+if(version&&version.textContent.includes('網站測試版'))version.textContent='2.2.2 網站測試版 · 黑白芫荽';
+})();
