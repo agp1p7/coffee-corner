@@ -1,0 +1,51 @@
+name: Install coffee workspace
+on:
+  push:
+    branches: [main]
+    paths: [coffee-workspace.js, .github/workflows/install-workspace.yml]
+  workflow_dispatch:
+permissions:
+  contents: write
+  pages: write
+concurrency:
+  group: coffee-workspace-install
+  cancel-in-progress: false
+jobs:
+  install:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: node --check coffee-workspace.js
+      - name: Connect workspace without rewriting existing modules
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import subprocess
+          page, lang = Path('index.html'), Path('coffee-i18n.js')
+          html, js = page.read_text(encoding='utf-8'), lang.read_text(encoding='utf-8')
+          marker = '<script src="./coffee-workspace.js?v=1"></script>'
+          if marker not in html:
+              sha = subprocess.check_output(['git', 'hash-object', 'index.html'], text=True).strip()
+              if sha != '4c342e91eeb3eff72d9e6e5e478bf8cafa5fa80c' or html.count('</html>') != 1:
+                  raise SystemExit('Homepage changed since review; no files modified.')
+              html = html.replace('</html>', marker + '</html>')
+          if '2.7.0' in js:
+              sha = subprocess.check_output(['git', 'hash-object', 'coffee-i18n.js'], text=True).strip()
+              if sha != '59a942042dcc3594e55b57630105f69a42152690':
+                  raise SystemExit('Language module changed since review; no files modified.')
+              js = js.replace('2.7.0', '2.8.0')
+          page.write_text(html, encoding='utf-8')
+          lang.write_text(js, encoding='utf-8')
+          PY
+          node --check coffee-i18n.js
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add index.html coffee-i18n.js
+          if ! git diff --cached --quiet; then
+            git commit -m "Enable coffee workspace, independent brewing and share cards"
+            git push origin HEAD:main
+          fi
+      - name: Rebuild Pages
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh api --method POST repos/agp1p7/coffee-corner/pages/builds
