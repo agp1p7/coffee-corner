@@ -17,3 +17,7 @@ function init(){const settings=document.getElementById('settings');if(!settings|
 let language=root.lang;new MutationObserver(()=>{if(root.lang!==language){language=root.lang;refresh();}}).observe(root,{attributes:true,attributeFilter:['lang']});
 refresh();if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init,{once:true});else init();
 })();
+(function(){
+if(typeof document==='undefined'||document.getElementById('coffeeRecipeShareLoader'))return;
+const base=new URL('.',document.currentScript?document.currentScript.src:document.baseURI),script=document.createElement('script');script.id='coffeeRecipeShareLoader';script.src=new URL('coffee-recipe-share.js?v=1',base).href;script.defer=true;document.head.append(script);
+})();
