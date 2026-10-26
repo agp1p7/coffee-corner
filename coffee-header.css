@@ -1,0 +1,9 @@
+html #coffeeAppHeader{gap:12px;align-items:center}
+html #coffeeAppHeader>h1{font-size:42px;line-height:1.2;margin:6px 0}
+html #coffeeAppHeader #coffeeLanguageSwitch{gap:5px;margin:0}
+html #coffeeAppHeader #coffeeLanguageSwitch button{position:relative;isolation:isolate;display:inline-grid;place-items:center;min-width:44px;min-height:44px;height:44px;margin:0;padding:0 8px;border:0;border-radius:6px;background:transparent;color:#ccc;font-size:12px;line-height:1.2;white-space:nowrap}
+html #coffeeAppHeader #coffeeLanguageSwitch button::before{content:"";position:absolute;inset:8px 0;border:1px solid #777;border-radius:6px;background:#222;z-index:-1;pointer-events:none}
+html #coffeeAppHeader #coffeeLanguageSwitch button[aria-pressed="true"]{background:transparent;color:#111}
+html #coffeeAppHeader #coffeeLanguageSwitch button[aria-pressed="true"]::before{background:#fff;border-color:#fff}
+html #coffeeAppHeader #coffeeLanguageSwitch button:focus-visible{outline:3px solid #fff;outline-offset:2px}
+@media(max-width:599px){html #coffeeAppHeader{gap:8px}html #coffeeAppHeader>h1{font-size:clamp(24px,7vw,27px)}html #coffeeAppHeader #coffeeLanguageSwitch{gap:4px}html #coffeeAppHeader #coffeeLanguageSwitch button{font-size:11px;padding:0 6px}html #coffeeAppHeader #coffeeLanguageSwitch button::before{inset:9px 0}}

@@ -21,3 +21,7 @@ refresh();if(document.readyState==='loading')document.addEventListener('DOMConte
 if(typeof document==='undefined'||document.getElementById('coffeeRecipeShareLoader'))return;
 const base=new URL('.',document.currentScript?document.currentScript.src:document.baseURI),script=document.createElement('script');script.id='coffeeRecipeShareLoader';script.src=new URL('coffee-recipe-share.js?v=1',base).href;script.defer=true;document.head.append(script);
 })();
+(function(){
+if(typeof document==='undefined'||document.getElementById('coffeeHeaderSizeSheet'))return;
+const link=document.createElement('link');link.id='coffeeHeaderSizeSheet';link.rel='stylesheet';link.href=new URL('coffee-header.css?v=1',document.currentScript?document.currentScript.src:document.baseURI).href;document.head.append(link);
+})();
