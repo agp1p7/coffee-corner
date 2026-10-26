@@ -1,0 +1,27 @@
+{
+  "id": "./",
+  "name": "一隅・咖啡角",
+  "short_name": "咖啡角",
+  "lang": "zh-Hant",
+  "start_url": "./#guide",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#111111",
+  "theme_color": "#111111",
+  "description": "簡潔的咖啡配方、引導沖煮與風味紀錄。",
+  "prefer_related_applications": false,
+  "icons": [
+    {
+      "src": "./coffee-icon-192.svg",
+      "sizes": "192x192",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "./coffee-icon-512.svg",
+      "sizes": "512x512",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
