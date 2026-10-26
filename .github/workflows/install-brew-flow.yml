@@ -1,0 +1,56 @@
+name: Install guided brewing flow
+on:
+  push:
+    branches: [main]
+    paths: [coffee-brew-flow.js, .github/workflows/install-brew-flow.yml]
+  workflow_dispatch:
+permissions:
+  contents: write
+  pages: write
+concurrency:
+  group: coffee-brew-flow-install
+  cancel-in-progress: false
+jobs:
+  install:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: node --check coffee-brew-flow.js
+      - name: Connect flow and dynamic timer callbacks
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import subprocess
+          page, lang = Path('index.html'), Path('coffee-i18n.js')
+          html, js = page.read_text(encoding='utf-8'), lang.read_text(encoding='utf-8')
+          marker = '<script src="./coffee-brew-flow.js?v=1"></script>'
+          if marker not in html:
+              sha = subprocess.check_output(['git', 'hash-object', 'index.html'], text=True).strip()
+              if sha != '8ed2f5cfd3ba1848ef5d93befd377ca26df445b3' or html.count('</html>') != 1:
+                  raise SystemExit('Homepage changed since review; no files modified.')
+              pairs = [('setInterval(render,250)', 'setInterval(()=>render(),250)'), ("document.addEventListener('visibilitychange',render)", "document.addEventListener('visibilitychange',()=>render())")]
+              for old, new in pairs:
+                  if html.count(old) != 1:
+                      raise SystemExit('Unexpected timer callback; no files modified.')
+                  html = html.replace(old, new, 1)
+              html = html.replace('</html>', marker + '</html>')
+          if '2.6.0' in js:
+              sha = subprocess.check_output(['git', 'hash-object', 'coffee-i18n.js'], text=True).strip()
+              if sha != '0c72da20906576fde65708f2522ecf6b55cfd426':
+                  raise SystemExit('Language module changed since review; no files modified.')
+              js = js.replace('2.6.0', '2.7.0')
+          page.write_text(html, encoding='utf-8')
+          lang.write_text(js, encoding='utf-8')
+          PY
+          node --check coffee-i18n.js
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add index.html coffee-i18n.js
+          if ! git diff --cached --quiet; then
+            git commit -m "Enable prepare brew taste flow and accurate elapsed timing"
+            git push origin HEAD:main
+          fi
+      - name: Rebuild Pages
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh api --method POST repos/agp1p7/coffee-corner/pages/builds
