@@ -1,0 +1,46 @@
+name: Install coffee language switch
+on:
+  push:
+    branches: [main]
+    paths: [coffee-i18n.js, .github/workflows/install-coffee-i18n.yml]
+  workflow_dispatch:
+permissions:
+  contents: write
+  pages: write
+concurrency:
+  group: coffee-language-install
+  cancel-in-progress: false
+jobs:
+  install:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check language module
+        run: node --check coffee-i18n.js
+      - name: Add language module to homepage
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import subprocess
+          p = Path('index.html')
+          text = p.read_text(encoding='utf-8')
+          marker = '<script src="./coffee-i18n.js?v=1"></script>'
+          if marker not in text:
+              sha = subprocess.check_output(['git', 'hash-object', 'index.html'], text=True).strip()
+              if sha != '60a533165a63ae67df8a0f2da1fb5454a07a70ef':
+                  raise SystemExit('Homepage changed since review; stopped without modifying it.')
+              if text.count('</html>') != 1:
+                  raise SystemExit('Unexpected homepage structure.')
+              p.write_text(text.replace('</html>', marker + '</html>'), encoding='utf-8')
+          PY
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add index.html
+          if ! git diff --cached --quiet; then
+            git commit -m "Load bilingual coffee interface"
+            git push origin HEAD:main
+          fi
+      - name: Request Pages rebuild
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh api --method POST repos/agp1p7/coffee-corner/pages/builds
