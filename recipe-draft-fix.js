@@ -221,3 +221,28 @@ function fromHash(){return typeof window!=='undefined'?window.location.hash.slic
 if(typeof window!=='undefined'){window.addEventListener('popstate',()=>go(fromHash(),false));window.addEventListener('hashchange',()=>go(fromHash(),false));}
 go(fromHash()||'brew',false);
 })();
+(function(){
+'use strict';
+if(typeof window==='undefined'||typeof document==='undefined'||document.getElementById('coffeeNavScrollStyle'))return;
+const nav=document.querySelector('nav');if(!nav)return;
+const style=document.createElement('style');style.id='coffeeNavScrollStyle';style.textContent='nav.coffee-auto-hide-nav{transform:translateY(0);opacity:1;transition:transform 180ms ease,opacity 180ms ease}nav.coffee-auto-hide-nav.coffee-nav-hidden{transform:translateY(calc(-100% - 16px));opacity:0;pointer-events:none}@media(prefers-reduced-motion:reduce){nav.coffee-auto-hide-nav{transition:none}}';document.head.append(style);nav.classList.add('coffee-auto-hide-nav');
+function position(){const max=Math.max(0,document.documentElement.scrollHeight-window.innerHeight);return Math.max(0,Math.min(max,window.scrollY||0));}
+let last=position(),distance=0,hidden=false,pending=false,keyboard=false,holdUntil=0;
+function hide(value){if(hidden===value)return;hidden=value;nav.classList.toggle('coffee-nav-hidden',value);}
+function reveal(){hide(false);last=position();distance=0;holdUntil=performance.now()+300;}
+function update(){pending=false;const y=position(),delta=y-last;last=y;
+ if(y<=32||performance.now()<holdUntil||(keyboard&&nav.contains(document.activeElement))){distance=0;hide(false);return;}
+ if(Math.abs(delta)<1)return;
+ if(!hidden&&nav.getBoundingClientRect().top>1){distance=0;return;}
+ distance=Math.sign(delta)===Math.sign(distance)?distance+delta:delta;
+ if(distance>=24){hide(true);distance=0;}else if(distance<=-10){hide(false);distance=0;}
+}
+function queue(){if(!pending){pending=true;window.requestAnimationFrame(update);}}
+window.addEventListener('scroll',queue,{passive:true});
+nav.addEventListener('focusin',reveal);nav.addEventListener('click',reveal,true);
+document.addEventListener('keydown',event=>{if(event.key==='Tab'||nav.contains(document.activeElement)){keyboard=true;if(nav.contains(document.activeElement))reveal();}},true);
+document.addEventListener('pointerdown',()=>{keyboard=false;},{capture:true,passive:true});
+window.addEventListener('resize',reveal,{passive:true});window.addEventListener('orientationchange',reveal,{passive:true});
+window.addEventListener('popstate',reveal,true);window.addEventListener('hashchange',reveal,true);
+document.addEventListener('visibilitychange',()=>{if(!document.hidden)reveal();});
+})();
