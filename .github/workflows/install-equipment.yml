@@ -1,0 +1,59 @@
+name: Install equipment library
+on:
+  push:
+    branches: [main]
+    paths: [coffee-equipment.js, .github/workflows/install-equipment.yml]
+  workflow_dispatch:
+permissions:
+  contents: write
+  pages: write
+concurrency:
+  group: coffee-equipment-install
+  cancel-in-progress: false
+jobs:
+  install:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: node --check coffee-equipment.js
+      - name: Safely connect equipment module
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import subprocess
+          page = Path('index.html')
+          lang = Path('coffee-i18n.js')
+          html = page.read_text(encoding='utf-8')
+          js = lang.read_text(encoding='utf-8')
+          marker = '<script src="./coffee-equipment.js?v=1"></script>'
+          if marker not in html:
+              sha = subprocess.check_output(['git', 'hash-object', 'index.html'], text=True).strip()
+              if sha != '12a98031e12e37f4971ea1010c511d6d2718c2f0' or html.count('</html>') != 1:
+                  raise SystemExit('Homepage changed since review; no files modified.')
+              html = html.replace('</html>', marker + '</html>')
+          if '2.5.0' in js:
+              sha = subprocess.check_output(['git', 'hash-object', 'coffee-i18n.js'], text=True).strip()
+              if sha != '9b33044e9020ecde8be3af69e121e82d6e5ac808':
+                  raise SystemExit('Language module changed since review; no files modified.')
+              js = js.replace('2.5.0', '2.6.0')
+          hook = "if(!parent||parent.closest('[data-coffee-user-text]')||parent===version||"
+          if hook not in js:
+              old = 'if(!parent||parent===version||'
+              if js.count(old) != 1:
+                  raise SystemExit('Unexpected translation hook; no files modified.')
+              js = js.replace(old, hook, 1)
+          page.write_text(html, encoding='utf-8')
+          lang.write_text(js, encoding='utf-8')
+          PY
+          node --check coffee-i18n.js
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add index.html coffee-i18n.js
+          if ! git diff --cached --quiet; then
+            git commit -m "Enable equipment library and preserve user equipment labels"
+            git push origin HEAD:main
+          fi
+      - name: Rebuild Pages
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh api --method POST repos/agp1p7/coffee-corner/pages/builds
