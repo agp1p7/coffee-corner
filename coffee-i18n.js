@@ -78,6 +78,21 @@ const D=Object.fromEntries(String.raw`一隅・咖啡角|Coffee Corner
 下壓|Press
 開關閥門|Operate valve
 滴濾／等待完成|Drawdown / finish
+繞圈注水|Circle pour
+中心注水|Center pour
+攪拌|Stir
+後加水（bypass）|Bypass water
+後加冰塊|Add ice
+手動確認|Confirm manually
+手動確認，不強制倒數|Confirm manually; no countdown
+後加用量g|Post-addition amount (g)
+後加水種類|Bypass water kind
+冷水|Cold water
+常溫水|Room-temperature water
+熱水|Hot water
+舊冷水／冰轉為步驟|Convert legacy cold water / ice to steps
+後加量不計入萃取水；手動步驟需確認完成。|Post additions are separate from brew water; confirm manual steps to finish.
+請先轉換舊冷水／冰，避免與後加步驟重複計算。|Convert legacy cold water / ice first to avoid counting additions twice.
 水量等比例縮放|Scale recipe water
 新粉量g|New coffee dose (g)
 縮放水量|Scale water
@@ -195,21 +210,25 @@ function translate(raw,id=''){
  if(id==='recipes')return raw.replace(/^〔未儲存草稿〕 /,'[Unsaved draft] ');
  if(id==='target'&&!/^＋[\d.]+g／累計[\d.]+g／目標[\d.]+g\/s$/.test(s)&&s!=='本段不加水')return raw;
  if(D[s])return lead+D[s]+tail;
- if(id==='stats')return s.replace(/萃取水/g,'Brew water ').replace(/ · 粉/g,' · Coffee ').replace(/萃取比1:/g,'Brew ratio 1:').replace(/含冰總投入比1:/g,'Total input ratio 1:').replace(/(\d+)段注水 · 預定斷水(\d+)次/g,'$1 pours · $2 planned pauses');
+ if(id==='stats')return s.replace(/萃取水/g,'Brew water ').replace(/萃取注水/g,'Brew water ').replace(/後加冷水/g,'Cold bypass ').replace(/後加常溫水/g,'Room-temperature bypass ').replace(/後加熱水/g,'Hot bypass ').replace(/後加水/g,'Bypass water ').replace(/後加冰/g,'Ice added ').replace(/(?:另有)?(\d+)段手動確認/g,'$1 manual confirmations').replace(/ · 粉/g,' · Coffee ').replace(/萃取比1:/g,'Brew ratio 1:').replace(/含冰總投入比1:/g,'Total input ratio 1:').replace(/(\d+)段注水 · 預定斷水(\d+)次/g,'$1 pours · $2 planned pauses');
  let m=s.match(/^(\d+)\/(\d+) (.+) · 剩(\d+)秒$/);if(id==='phase'&&m)return `${m[1]}/${m[2]} · ${tr(m[3])} · ${m[4]} s remaining`;
  m=s.match(/^＋([\d.]+)g／累計([\d.]+)g／目標([\d.]+)g\/s$/);if(id==='target'&&m)return `+${m[1]} g / Total ${m[2]} g / Target ${m[3]} g/s`;
  m=s.match(/^(\d+)次$/);if(id==='actual'&&m)return m[1]+' pauses';
  m=s.match(/^共(\d+)杯 · 已選(\d+)$/);if(m)return `${m[1]} cups · ${m[2]} selected`;
  m=s.match(/^估算萃取率([\d.]+)%＝成品重×TDS%÷粉量$/);if(m)return `Estimated extraction yield ${m[1]}% = Beverage mass × TDS% ÷ Coffee dose`;
- m=s.match(/^(\d+)\.(悶蒸注水|注水|等待／斷水|攪拌／繞圈|下壓|開關閥門|滴濾／等待完成) (\d+)秒(?: ＋([\d.]+)g → 累計([\d.]+)g)?(.*)$/s);if(id==='live'&&m)return `${m[1]}. ${tr(m[2])} · ${m[3]} s${m[4]?' · +'+m[4]+' g → Total '+m[5]+' g':''}${m[6]}`;
+ m=s.match(/^(\d+)\.(後加水（bypass）|後加冰塊) 手動確認(?: ＋([\d.]+)g)?(.*)$/s);if(id==='live'&&m)return `${m[1]}. ${tr(m[2])} · confirm manually${m[3]?' · +'+m[3]+' g':''}${m[4]}`;
+ m=s.match(/^(\d+)\.(悶蒸注水|注水|等待／斷水|攪拌／繞圈|下壓|開關閥門|滴濾／等待完成|繞圈注水|中心注水|攪拌) (\d+)秒(?: ＋([\d.]+)g → 累計([\d.]+)g)?(.*)$/s);if(id==='live'&&m)return `${m[1]}. ${tr(m[2])} · ${m[3]} s${m[4]?' · +'+m[4]+' g → Total '+m[5]+' g':''}${m[6]}`;
  m=s.match(/^(手機窄螢幕|平板／中型視窗|寬螢幕(?:雙欄)?) · (直向|橫向)$/);if(m)return ({'手機窄螢幕':'Narrow / mobile','平板／中型視窗':'Medium / tablet','寬螢幕':'Wide screen','寬螢幕雙欄':'Wide / two columns'}[m[1]])+' · '+(m[2]==='直向'?'Portrait':'Landscape');
  m=s.match(/^以\s*(\d+)\s*個配方、\s*(\d+)\s*筆紀錄取代現有資料？請先備份。$/);if(m)return `Replace current data with ${m[1]} recipes and ${m[2]} entries? Back up first.`;
  if(s.startsWith('匯入失敗：'))return 'Import failed: '+tr(s.slice(5));
  return raw;
 }
-function formatInfo(c){const r=c.recipe;let water=0,pours=0,pauses=0,seen=false,gap=false;for(const s of r.steps){water+=s.water;if(s.water>0){if(seen&&gap)pauses++;pours++;seen=true;gap=false;}else if(seen&&s.sec>0)gap=true;}return `${r.bean||'Coffee not specified'} · ${r.dripper||tr(r.method)}\n${r.dose} g coffee · ${water} g water · ${r.temp}°C\n${pours} pours · ${pauses} planned pauses · ${c.breaks} logged pauses\nTimed ${c.seconds} s · Enjoyment ${c.rating}/5 · ${tr(c.strength)}`;}
-function formatDetail(c){const r=c.recipe;return `${tr(r.shape)} · ${tr(r.material)} · Filter: ${r.filter}\nGrinder: ${r.grinder} · Setting: ${r.grind} · Water: ${r.waterSource}\n${r.roaster} ${r.origin} ${r.process} ${tr(r.roast)}\nRoasted: ${r.roastDate} · Opened: ${r.openDate}\nCold water: ${r.cold} g · Ice: ${r.ice} g\nAcidity / Sweetness / Bitterness / Body: ${scoreKeys.map(k=>c[k]??'—').join(' / ')}\nBeverage: ${c.yieldMass??'—'} g · TDS: ${c.tds??'—'}%\nPause times: ${c.markers.join(', ')||'Not logged'} s\n${r.notes}\n${r.steps.map(s=>tr(s.type)+' '+s.sec+' s +'+s.water+' g '+s.note).join('\n')}`;}
-if(typeof module!=='undefined'&&module.exports)module.exports={translate,formatInfo,formatDetail};
+function recordAmounts(r){const shared=typeof globalThis!=='undefined'?globalThis.CoffeeSteps:null;if(shared&&typeof shared.summary==='function')return shared.summary(r);let water=0,pours=0,breaks=0,total=0,seen=false,gap=false,postCold=r.cold||0,postRoom=0,postHot=0,postIce=r.ice||0;for(const s of r.steps){if(['後加水（bypass）','後加冰塊'].includes(s.type)){if(s.type==='後加冰塊')postIce+=s.water;else if((s.waterKind||'cold')==='cold')postCold+=s.water;else if(s.waterKind==='room')postRoom+=s.water;else postHot+=s.water;continue;}total+=s.sec;if(['悶蒸注水','注水','繞圈注水','中心注水'].includes(s.type)){water+=s.water;if(seen&&gap)breaks++;pours++;seen=true;gap=false;}else if(seen&&s.sec>0)gap=true;}return{water,pours,breaks,total,postCold,postRoom,postHot,postWater:postCold+postRoom+postHot,postIce};}
+function additionInfo(x){return[[x.postCold,'Cold bypass'],[x.postRoom,'Room-temperature bypass'],[x.postHot,'Hot bypass'],[x.postIce,'Ice added']].filter(a=>a[0]>0).map(a=>a[1]+': '+a[0]+' g').join(' · ');}
+function formatInfo(c){const r=c.recipe,x=recordAmounts(r),extra=additionInfo(x);return `${r.bean||'Coffee not specified'} · ${r.dripper||tr(r.method)}\n${r.dose} g coffee · ${x.water} g water · ${r.temp}°C${extra?'\n'+extra:''}\n${x.pours} pours · ${x.breaks} planned pauses · ${c.breaks} logged pauses\nTimed ${c.seconds} s · Enjoyment ${c.rating}/5 · ${tr(c.strength)}`;}
+function formatStep(s){if(['後加水（bypass）','後加冰塊'].includes(s.type))return tr(s.type)+' · confirm manually · +'+s.water+' g'+(s.type==='後加水（bypass）'?' ('+({cold:'cold water',room:'room-temperature water',hot:'hot water'}[s.waterKind||'cold']||'water')+')':'')+(s.note?' · '+s.note:'');return tr(s.type)+' '+s.sec+' s +'+s.water+' g '+s.note;}
+function formatDetail(c){const r=c.recipe,x=recordAmounts(r),extra=[[x.postRoom,'Room-temperature bypass'],[x.postHot,'Hot bypass']].filter(a=>a[0]>0).map(a=>a[1]+': '+a[0]+' g').join(' · ');return `${tr(r.shape)} · ${tr(r.material)} · Filter: ${r.filter}\nGrinder: ${r.grinder} · Setting: ${r.grind} · Water: ${r.waterSource}\n${r.roaster} ${r.origin} ${r.process} ${tr(r.roast)}\nRoasted: ${r.roastDate} · Opened: ${r.openDate}\nCold water: ${x.postCold} g · Ice: ${x.postIce} g${extra?'\n'+extra:''}\nAcidity / Sweetness / Bitterness / Body: ${scoreKeys.map(k=>c[k]??'—').join(' / ')}\nBeverage: ${c.yieldMass??'—'} g · TDS: ${c.tds??'—'}%\nPause times: ${c.markers.join(', ')||'Not logged'} s\n${r.notes}\n${r.steps.map(formatStep).join('\n')}`;}
+if(typeof module!=='undefined'&&module.exports)module.exports={translate,formatInfo,formatDetail,recordAmounts,formatStep};
 if(typeof document==='undefined'||document.getElementById('coffeeLanguageSwitch'))return;
 const KEY='coffee-corner-language';let language='zh-Hant';try{if(localStorage.getItem(KEY)==='en')language='en';}catch(error){}
 const memory=new WeakMap(),attributeMemory=new WeakMap();let observer=null,scheduled=false;const dirty=new Set();
