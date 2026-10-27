@@ -1,0 +1,20 @@
+'use strict';
+const A=require('node:assert/strict'),fs=require('node:fs'),vm=require('node:vm');
+const source=fs.readFileSync(require.resolve('../coffee-workspace.js'),'utf8');
+const start=source.indexOf('const B='),end=source.indexOf("if(typeof document===");
+A.ok(start>=0&&end>start,'workspace helper boundaries');
+const sandbox={module:{exports:{}}};vm.runInNewContext(source.slice(start,end),sandbox);
+const M=sandbox.module.exports;let passed=0;
+function test(name,f){f();passed++;console.log('PASS '+name);}
+const bean={id:'b1',active:true,bean:'Coffee',roaster:'',origin:'',process:'',roast:'',roastDate:'',openDate:'',beanFlavor:'Original'};
+test('legacy beans without flavor remain valid',()=>{const b={...bean};delete b.beanFlavor;A.ok(M.beanOK(b));A.equal(M.flavor(b),'');});
+test('flavor validation rejects wrong types and oversized text',()=>{A.ok(M.beanOK(bean));for(const beanFlavor of [1,null,'x'.repeat(3001)])A.ok(!M.beanOK({...bean,beanFlavor}));});
+test('recipe flavor takes priority over nested flavor',()=>{A.equal(M.snapshotFlavor({beanFlavor:'Pinned',beanSnapshot:bean}),'Pinned');A.equal(M.pinnedFlavor({beanFlavor:'Pinned',beanSnapshot:bean}),'Pinned');});
+test('explicit empty flavor does not revive nested flavor',()=>{A.equal(M.snapshotFlavor({beanFlavor:'',beanSnapshot:bean}),'');A.equal(M.pinnedFlavor({beanFlavor:'',beanSnapshot:bean}),'');});
+test('legacy snapshots and missing values have defined fallbacks',()=>{A.equal(M.snapshotFlavor({beanSnapshot:bean}),'Original');A.equal(M.pinnedFlavor({beanSnapshot:bean}),'Original');A.equal(M.pinnedFlavor({}),null);A.equal(M.snapshotFlavor({}),'');});
+test('clean recipe copies survive catalog mutations',()=>{const r=M.clean({beanFlavor:'Original',beanSnapshot:bean,guideEvents:[]});const before=JSON.stringify(r);bean.beanFlavor='Changed';A.equal(JSON.stringify(r),before);A.equal(M.snapshotFlavor(r),'Original');A.ok(!('guideEvents' in r));});
+const read=source.match(/read=function\(\)\{const r=oldRead\(\);[\s\S]*?return r;\};/);
+A.ok(read,'workspace read wrapper found');
+test('editor read preserves saved flavor after catalog changes',()=>{for(const value of ['Pinned','']){const old={...bean,beanFlavor:value};const context={oldRead:()=>({...old}),beanChoice:old,recipeBeanFlavor:value,beans:()=>[bean],same:M.same,flavor:M.flavor,FLAVOR:'beanFlavor',copy:x=>JSON.parse(JSON.stringify(x))};vm.runInNewContext(read[0],context);const r=context.read();A.equal(r.beanFlavor,value);A.equal(r.beanSnapshot.beanFlavor,value);}});
+test('editor read pins top-level flavor when nested snapshot is absent',()=>{const context={oldRead:()=>({...bean}),beanChoice:null,recipeBeanFlavor:'Pinned',beans:()=>[bean],same:M.same,flavor:M.flavor,FLAVOR:'beanFlavor',copy:x=>JSON.parse(JSON.stringify(x))};vm.runInNewContext(read[0],context);A.equal(context.read().beanFlavor,'Pinned');A.equal(context.read().beanSnapshot.beanFlavor,'Pinned');});
+console.log(JSON.stringify({passed,failed:0,scope:'isolated workspace helpers and editor read; not browser integration'}));
