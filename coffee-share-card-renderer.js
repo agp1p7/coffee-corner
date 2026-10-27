@@ -1,27 +1,22 @@
-async function drawCard(){
- const rev=++revision;cardBlob=null;downloadButton.disabled=shareButton.disabled=true;if(!activeCard)return;
- try{
-  if(document.fonts)await document.fonts.ready;if(rev!==revision)return;
-  const c=activeCard,r=c.recipe,x=m(r),story=format.value==='story',h=story?1920:1080;
-  canvas.width=1080;canvas.height=h;const ctx=canvas.getContext('2d');if(!ctx)throw Error('Canvas unavailable');
-  ctx.fillStyle='#111';ctx.fillRect(0,0,1080,h);ctx.strokeStyle='#aaa';ctx.strokeRect(36,36,1008,h-72);ctx.fillStyle='#fff';
-  function line(s,x,y,size){ctx.font=size+'px Iansui, serif';ctx.fillText(String(s),x,y);}
-  function wrap(s,y,size,max){ctx.font=size+'px Iansui, serif';let row='',lines=[];for(const ch of String(s).replace(/\r/g,'')){if(ch==='\n'){lines.push(row);row='';}else if(ctx.measureText(row+ch).width>880){lines.push(row);row=ch;}else row+=ch;}if(row)lines.push(row);for(let i=0;i<Math.min(max,lines.length);i++)line(lines[i]+(i===max-1&&lines.length>max?'…':''),96,y+i*(size+10),size);}
-  line(L('一隅・咖啡角','Coffee Corner'),96,story?120:80,28);
-  wrap(r.bean||L('未指定咖啡豆','Coffee not specified'),story?230:150,story?64:46,2);
-  wrap(r.name,story?430:295,story?40:28,1);
-  const beanInfo=[['烘豆商','Roaster',r.roaster],['產地','Origin',r.origin],['處理法','Process',r.process],['焙度','Roast',r.roast==='未填'?'':r.roast],['烘焙日','Roasted',r.roastDate]].filter(a=>String(a[2]||'').trim()).map(a=>L(a[0],a[1])+'：'+a[2]).join(' · ');
-  if(beanInfo)wrap(beanInfo,story?530:350,story?32:23,story?6:4);
-  const y=story?940:525,row=story?240:150;
-  for(const [i,v]of [[r.dose+' g',L('咖啡粉','Coffee')],[x.water+' g',L('萃取水目標','Target brew water')],[r.temp+'°C',L('水溫','Temperature')],[fmt(c.seconds*1000),L('實際計時','Actual timed duration')]].entries()){
-   const xx=i%2?570:96,yy=y+Math.floor(i/2)*row;line(v[0],xx,yy,story?64:58);line(v[1],xx,yy+44,story?30:26);
-  }
-  line(L('粉水比 1:','Brew ratio 1:')+(x.water/r.dose).toFixed(1),96,story?1320:770,30);
-  line(L('風味描述','Tasting description'),96,story?1410:825,28);
-  wrap(publicNote.value.trim()||L('尚未填寫，可於分享前補上','Add a description before sharing'),story?1470:870,story?34:26,story?7:3);
-  const extra=[];if(gearCheck.checked)extra.push([r.dripper,r.grinder,r.grind?L('刻度 ','Setting ')+r.grind+(r.grindUnit?' '+r.grindUnit:''):''].filter(Boolean).join(' · '));if(dateCheck.checked)extra.push(new Date(c.date).toLocaleDateString());
-  if(extra.length)wrap(extra.join(' · '),story?1820:980,story?24:19,story?2:1);
-  line(L('配方目標水量，非電子秤實測','Recipe water target, not a scale measurement'),96,h-52,18);
-  canvas.toBlob(blob=>{if(rev===revision){cardBlob=blob;downloadButton.disabled=shareButton.disabled=!blob;}},'image/png');
- }catch(e){msg(L('無法產生圖片，請改用支援Canvas的瀏覽器。','Could not create the image; a Canvas-capable browser is required.'));}
-}
+(function(root,factory){'use strict';const api=factory();if(typeof module==='object'&&module.exports)module.exports=api;else root.CoffeeCardB=api;})(typeof globalThis!=='undefined'?globalThis:this,function(){
+'use strict';
+const POUR=['悶蒸注水','注水','繞圈注水','中心注水'],POST='後加水（bypass）',ICE='後加冰塊';
+function totals(r){let water=0,postCold=r.cold||0,postRoom=0,postHot=0,postIce=r.ice||0;const kinds=['cold','room','hot'];if(!Array.isArray(r.steps))throw Error('Invalid steps');for(const s of r.steps){if(!Number.isFinite(s.water)||s.water<0)throw Error('Invalid amount');if(POUR.includes(s.type))water+=s.water;else if(s.type===ICE)postIce+=s.water;else if(s.type===POST){if(s.waterKind!==undefined&&!kinds.includes(s.waterKind))throw Error('Invalid water kind');if((s.waterKind||'cold')==='cold')postCold+=s.water;else if(s.waterKind==='room')postRoom+=s.water;else postHot+=s.water;}}if(r.cold>0&&r.steps.some(s=>s.type===POST)||r.ice>0&&r.steps.some(s=>s.type===ICE))throw Error('Ambiguous additions');if(![water,postCold,postRoom,postHot,postIce].every(v=>Number.isFinite(v)&&v>=0)||water<=0)throw Error('Invalid totals');return{water,postCold,postRoom,postHot,postIce,postWater:postCold+postRoom+postHot};}
+function lines(ctx,value,width,size){ctx.font=size+'px Iansui, serif';const result=[];let row='';for(const ch of String(value).replace(/\r/g,'')){if(ch==='\n'){result.push(row);row='';}else if(ctx.measureText(row+ch).width>width&&row){result.push(row);row=ch;}else row+=ch;}if(row||!result.length)result.push(row);return result;}
+function block(ctx,value,x,y,width,height,max,min){for(let size=max;size>=min;size--){const a=lines(ctx,value,width,size),lineHeight=size*1.28;if(a.length*lineHeight<=height&&a.every(v=>ctx.measureText(v).width<=width)){a.forEach((v,i)=>ctx.fillText(v,x,y+i*lineHeight));return true;}}return false;}
+function draw(ctx,c,options={}){const r=c.recipe,x=totals(r),story=options.story===true,h=story?1920:1080,L=(a,b)=>options.lang==='en'?b:a;if(!Number.isFinite(r.dose)||r.dose<=0||!Number.isFinite(r.temp)||!Number.isFinite(c.seconds)||c.seconds<0)throw Error('Invalid brew parameters');const clock=v=>{const n=Math.floor(v);return String(Math.floor(n/60)).padStart(2,'0')+':'+String(n%60).padStart(2,'0');};let fits=true;ctx.fillStyle='#111';ctx.fillRect(0,0,1080,h);ctx.strokeStyle='#777';ctx.lineWidth=1;ctx.strokeRect(36,36,1008,h-72);ctx.fillStyle='#fff';ctx.textBaseline='top';ctx.textAlign='left';function put(value,xx,y,w,height,max,min){if(!block(ctx,value,xx,y,w,height,max,min))fits=false;}function rule(y){ctx.strokeStyle='#666';ctx.beginPath();ctx.moveTo(96,y);ctx.lineTo(984,y);ctx.stroke();}
+ctx.font='24px Iansui, serif';ctx.textAlign='right';ctx.fillText(L('一隅・咖啡角','Coffee Corner'),984,story?92:58);ctx.textAlign='left';
+put(r.bean||L('未指定咖啡豆','Coffee not specified'),96,story?160:110,888,story?200:110,story?68:52,story?40:28);
+if(String(r.roaster||'').trim())put(r.roaster,96,story?390:232,888,story?90:58,story?40:30,story?26:18);
+const fields=[['產地','Origin',r.origin],['處理法','Process',r.process],['焙度','Roast',['未填','Not specified'].includes(r.roast)?'':r.roast],['烘焙日','Roasted',r.roastDate]].filter(a=>String(a[2]||'').trim()),top=story?540:320,rowHeight=story?140:90;
+if(fields.length){rule(top-14);fields.forEach((f,i)=>{const xx=i%2?560:96,yy=top+Math.floor(i/2)*rowHeight;put(L(f[0],f[1]),xx,yy,424,story?36:26,story?28:20,story?24:18);put(f[2],xx,yy+(story?42:28),424,story?86:54,story?38:28,story?24:18);});const bottom=top+Math.ceil(fields.length/2)*rowHeight;rule(bottom);if(fields.length>2)rule(top+rowHeight);if(fields.length>1){ctx.beginPath();ctx.moveTo(540,top);ctx.lineTo(540,bottom);ctx.stroke();}}
+if(r.name)put(r.name,96,story?860:520,888,story?60:34,story?34:24,story?24:18);
+const parameters=r.dose+' g '+L('粉','coffee')+' · '+x.water+' g '+L('萃取水','brew water')+' · '+r.temp+'°C\n'+L('粉水比 1:','Brew ratio 1:')+(x.water/r.dose).toFixed(1)+' · '+L('實際計時 ','Actual time ')+clock(c.seconds);
+put(parameters,96,story?960:570,888,story?150:80,story?44:28,story?28:20);
+const additions=[[x.postCold,'後加冷水','Cold bypass'],[x.postRoom,'後加常溫水','Room-temperature bypass'],[x.postHot,'後加熱水','Hot bypass'],[x.postIce,'後加冰','Ice added']].filter(a=>a[0]>0).map(a=>L(a[1],a[2])+' '+a[0]+' g');if(additions.length)put(additions.join(' · '),96,story?1140:664,888,story?120:64,story?36:26,story?24:18);
+rule(story?1280:734);put(L('風味描述','Tasting description'),96,story?1310:748,888,40,28,22);
+const note=options.note===undefined?String(c.taste||''):String(options.note);put(note.trim()||L('尚未填寫，可於分享前補上','Add a description before sharing'),96,story?1370:798,888,story?360:130,story?40:30,story?24:18);
+const extra=[];if(options.gear)extra.push([r.dripper,r.grinder,r.grind?L('刻度 ','Setting ')+r.grind+(r.grindUnit?' '+r.grindUnit:''):''].filter(Boolean).join(' · '));if(options.date){const d=new Date(c.date);if(Number.isFinite(d.getTime()))extra.push(d.toLocaleDateString(options.lang==='en'?'en':'zh-TW'));}if(extra.length)put(extra.join(' · '),96,story?1770:946,888,story?80:48,story?26:20,story?18:14);
+put(L('配方目標水量，非電子秤實測','Recipe water target, not a scale measurement'),96,story?1860:1020,888,28,18,16);return{fits,width:1080,height:h,totals:x};}
+return Object.freeze({draw,totals,block});
+});
