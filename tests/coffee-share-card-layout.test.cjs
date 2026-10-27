@@ -1,0 +1,13 @@
+'use strict';
+const A=require('node:assert/strict'),M=require('../coffee-share-card-renderer.js');
+let passed=0;function test(n,f){f();passed++;console.log('PASS '+n);}
+function cup(){return{seconds:180,date:'2026-10-27T03:00:00Z',taste:'柑橘明亮，尾韻乾淨',recipe:{name:'三段注水',bean:'示範豆',roaster:'示範烘豆所',origin:'耶加雪菲',process:'水洗',roast:'淺焙',roastDate:'2026-10-20',beanFlavor:'柑橘、白花、蜂蜜',dose:20,temp:92,cold:0,ice:0,steps:[{type:'注水',sec:180,water:300}]}};}
+function render(c,options){const calls=[],segments=[];let point;const ctx={font:'20px serif',fillRect(){},strokeRect(){},beginPath(){},moveTo(x,y){point={x,y};},lineTo(x,y){segments.push({a:point,b:{x,y}});},stroke(){},measureText(s){return{width:[...String(s)].length*parseFloat(this.font)*.65};},fillText(t,x,y){calls.push({text:String(t),x,y,size:parseFloat(this.font)});}};const result=M.draw(ctx,c,options);return{calls,segments,result,text:calls.map(x=>x.text).join('\n')};}
+test('brand is 44px in square and story',()=>{for(const story of [false,true]){const r=render(cup(),{story});A.equal(r.result.fits,true);A.equal(r.calls.find(x=>x.text==='一隅・咖啡角').size,44);}});
+test('roast date and disclaimer are absent in both languages',()=>{for(const lang of ['zh-TW','en']){const r=render(cup(),{lang});A.doesNotMatch(r.text,/2026-10-20|烘焙日|Roasted|電子秤|scale measurement/);}});
+test('flavor occupies fourth grid cell without duplicate section',()=>{const r=render(cup(),{}),f=r.calls.find(x=>x.text==='風味描述');A.equal(f.x,560);A.equal(f.y,476);A.equal(r.calls.filter(x=>x.text==='柑橘、白花、蜂蜜').length,1);A.doesNotMatch(r.text,/豆子風味描述/);});
+test('metadata text has at least 32px grid padding',()=>{for(const story of [false,true]){const r=render(cup(),{story}),top=story?550:300,row=story?240:144;for(const text of ['產地','處理法','焙度','風味描述','耶加雪菲','水洗','淺焙','柑橘、白花、蜂蜜']){const c=r.calls.find(x=>x.text===text),rowTop=c.y<top+row?top:top+row;A.ok(c.y-rowTop>=32);A.ok(rowTop+row-(c.y+c.size*1.28)>=32);A.ok(c.x-(c.x<528?64:528)>=32);A.ok((c.x<528?528:1016)-(c.x+[...c.text].length*c.size*.65)>=32);}}});
+test('share edits and explicit empty flavor do not mutate original',()=>{const c=cup(),before=JSON.stringify(c);A.match(render(c,{beanFlavor:'分享風味'}).text,/分享風味/);A.doesNotMatch(render(c,{beanFlavor:''}).text,/風味描述|白花/);A.equal(JSON.stringify(c),before);});
+test('overflow flavor disables eligibility without truncation',()=>{for(const story of [false,true])A.equal(render(cup(),{story,beanFlavor:'豆'.repeat(3000)}).result.fits,false);});
+test('snapshot flavor fallback remains supported',()=>{const c=cup();delete c.recipe.beanFlavor;c.recipe.beanSnapshot={beanFlavor:'舊快照'};A.match(render(c,{}).text,/舊快照/);});
+console.log(JSON.stringify({passed,failed:0,scope:'mock Canvas; not browser or real-font acceptance'}));
