@@ -6,8 +6,8 @@
   "start_url": "./#guide",
   "scope": "./",
   "display": "standalone",
-  "background_color": "#111111",
-  "theme_color": "#111111",
+  "background_color": "#000000",
+  "theme_color": "#000000",
   "description": "簡潔的咖啡配方、引導沖煮與風味紀錄。",
   "prefer_related_applications": false,
   "icons": [
