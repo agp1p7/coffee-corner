@@ -1,6 +1,6 @@
 // coffee-cloud-sync.js
-// 跨裝置雲端同步模組（一隅・咖啡角）
-// 核心特色：Local-First（離線優先）、首次同步前自動匯出 JSON 備份、依 ID 智慧合併
+// 跨裝置雲端同步模組（一隅・咖啡角 v2）
+// 特色：Local-First、首登防護性本機備份、內容雜湊 + updatedAt 衝突比對、軟刪除墓碑（不復活已刪資料）、大批量分批上傳
 
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
 import {
@@ -13,8 +13,6 @@ import {
 import {
   getFirestore,
   doc,
-  getDoc,
-  setDoc,
   collection,
   getDocs,
   writeBatch
@@ -30,15 +28,149 @@ const firebaseConfig = {
   measurementId: "G-GV6G9BV1MD"
 };
 
-// 初始化 Firebase
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const dbStore = getFirestore(app);
 const provider = new GoogleAuthProvider();
 
 const STORAGE_KEY = 'yiyu-coffee-v2';
+const SYNC_META_PREFIX = 'yiyu-coffee-sync-meta-v1:';
+const LAST_UID_KEY = 'yiyu-coffee-sync-last-uid';
+const SAFETY_BACKUP_KEY = 'yiyu-coffee-sync-safety-exported';
+const TOMBSTONE_TTL_MS = 90 * 24 * 60 * 60 * 1000;
+const MAX_BATCH_OPS = 350;
 
-// 取得當前本機 db
+const isEn = () => document.documentElement.lang === 'en';
+const L = (zh, en) => (isEn() ? en : zh);
+
+let isApplyingCloudSync = false;
+let isSyncInProgress = false;
+let pendingSyncAfterFinish = false;
+let syncTimer = null;
+let inWindowSave = false;
+let lastStateInfo = { state: 'idle', email: '', timeStr: '', detail: '' };
+
+// -------------------------------------------------------------------------
+// 1. 時間戳記、穩定序列化、內容雜湊與文件 ID 安全處理
+// -------------------------------------------------------------------------
+function toEpochMs(val) {
+  if (typeof val === 'number' && Number.isFinite(val)) return val;
+  if (typeof val === 'string' && val.trim()) {
+    const parsed = Date.parse(val);
+    return Number.isFinite(parsed) ? parsed : 0;
+  }
+  if (val && typeof val.toMillis === 'function') {
+    try { return val.toMillis(); } catch (e) { return 0; }
+  }
+  if (val && typeof val.seconds === 'number') {
+    return val.seconds * 1000;
+  }
+  return 0;
+}
+
+const VOLATILE_KEYS = new Set([
+  'updatedAt', 'deletedAt', '_syncHash', 'guideCursor', 'guideEvents', 'guideMode'
+]);
+
+function stableSerialize(val) {
+  if (val === null || val === undefined) return 'null';
+  if (typeof val !== 'object') return JSON.stringify(val);
+  if (Array.isArray(val)) return '[' + val.map(stableSerialize).join(',') + ']';
+  const keys = Object.keys(val).filter(k => !VOLATILE_KEYS.has(k)).sort();
+  return '{' + keys.map(k => JSON.stringify(k) + ':' + stableSerialize(val[k])).join(',') + '}';
+}
+
+function hashItem(item) {
+  const str = stableSerialize(item);
+  let h = 0x811c9dc5;
+  for (let i = 0; i < str.length; i++) {
+    h ^= str.charCodeAt(i);
+    h = Math.imul(h, 0x01000193);
+  }
+  return (h >>> 0).toString(16).padStart(8, '0');
+}
+
+function getItemId(colName, item) {
+  if (!item || typeof item !== 'object') return '';
+  if (item.id && typeof item.id === 'string') return item.id;
+  if (colName === 'beans') {
+    const name = item.bean || item.name || '';
+    if (!name) return '';
+    return `${name}_${item.roastDate || ''}`;
+  }
+  return '';
+}
+
+function safeDocId(rawId) {
+  const encoded = encodeURIComponent(String(rawId || ''))
+    .replace(/\./g, '%2E');
+  if (!encoded || encoded === '.' || encoded === '..') return 'item_' + hashItem({ rawId });
+  if (encoded.startsWith('__') && encoded.endsWith('__')) return 'u_' + encoded;
+  return encoded;
+}
+
+function cleanItemForLocal(colName, docData) {
+  if (!docData || typeof docData !== 'object') return null;
+  const copy = JSON.parse(JSON.stringify(docData));
+  delete copy.deletedAt;
+  delete copy._syncHash;
+  // 僅保留非數字 sync-stamp 的杯測 ISO updatedAt（或統一不汙染其他資料結構）
+  if (colName !== 'cups' || typeof copy.updatedAt === 'number') {
+    delete copy.updatedAt;
+  }
+  return copy;
+}
+
+function prepareCloudPayload(colName, id, item, updatedAtMs, deletedAtMs = 0) {
+  if (deletedAtMs > 0) {
+    return {
+      id,
+      deletedAt: deletedAtMs,
+      updatedAt: updatedAtMs || deletedAtMs
+    };
+  }
+  const payload = JSON.parse(JSON.stringify(item));
+  delete payload.deletedAt;
+  delete payload._syncHash;
+  if (!payload.id) payload.id = id;
+  payload.updatedAt = updatedAtMs;
+  return payload;
+}
+
+// -------------------------------------------------------------------------
+// 2. 本機 DB 與 Sync Meta 讀寫
+// -------------------------------------------------------------------------
+function getActiveMetaUid() {
+  return (auth.currentUser && auth.currentUser.uid) ||
+    localStorage.getItem(LAST_UID_KEY) ||
+    '_pending';
+}
+
+function loadSyncMeta(uid) {
+  try {
+    const raw = localStorage.getItem(SYNC_META_PREFIX + uid);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      return {
+        lastSyncedAt: Number(parsed.lastSyncedAt) || 0,
+        items: parsed.items && typeof parsed.items === 'object' ? parsed.items : {},
+        tombstones: parsed.tombstones && typeof parsed.tombstones === 'object' ? parsed.tombstones : {}
+      };
+    }
+  } catch (e) {
+    console.warn('[Sync] 讀取同步中繼資料失敗', e);
+  }
+  return { lastSyncedAt: 0, items: {}, tombstones: {} };
+}
+
+function saveSyncMeta(uid, meta) {
+  try {
+    localStorage.setItem(SYNC_META_PREFIX + uid, JSON.stringify(meta));
+  } catch (e) {
+    console.warn('[Sync] 寫入同步中繼資料失敗', e);
+  }
+}
+
 function getLocalDB() {
   try {
     const raw = localStorage.getItem(STORAGE_KEY) || localStorage.getItem('yiyu-coffee-v1');
@@ -49,25 +181,193 @@ function getLocalDB() {
   return typeof db !== 'undefined' ? db : { version: 2, recipes: [], cups: [] };
 }
 
-// 寫入並儲存本機 db
-function saveLocalDB(newDb) {
-  try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(newDb));
-    if (typeof db !== 'undefined') {
-      Object.assign(db, newDb);
+function getCollectionArray(sourceDb, colName) {
+  if (!sourceDb || typeof sourceDb !== 'object') return [];
+  if (colName === 'recipes') return Array.isArray(sourceDb.recipes) ? sourceDb.recipes : [];
+  if (colName === 'cups') return Array.isArray(sourceDb.cups) ? sourceDb.cups : [];
+  if (colName === 'beans') return (sourceDb.beanCatalog && Array.isArray(sourceDb.beanCatalog.items)) ? sourceDb.beanCatalog.items : [];
+  if (colName === 'equipment') return (sourceDb.equipment && Array.isArray(sourceDb.equipment.items)) ? sourceDb.equipment.items : [];
+  return [];
+}
+
+// 偵測本機與已知基準之間的新增、修改與刪除，維護 tombstones
+function reconcileLocalDiff(localDb, meta, now, markNewItemsAsNow = false) {
+  const cols = ['recipes', 'cups', 'beans', 'equipment'];
+  const currentKeys = new Set();
+
+  for (const col of cols) {
+    const arr = getCollectionArray(localDb, col);
+    for (const item of arr) {
+      const id = getItemId(col, item);
+      if (!id) continue;
+      const mKey = `${col}:${id}`;
+      currentKeys.add(mKey);
+      const h = hashItem(item);
+      const known = meta.items[mKey];
+      const explicitTs = toEpochMs(item.updatedAt);
+
+      if (!known) {
+        const ts = (markNewItemsAsNow || meta.lastSyncedAt > 0)
+          ? Math.max(explicitTs, now)
+          : explicitTs;
+        meta.items[mKey] = { hash: h, updatedAt: ts };
+        // 若使用者以同 ID 重建曾經刪除的項目，清除舊墓碑
+        if (meta.tombstones[mKey] && ts > meta.tombstones[mKey]) {
+          delete meta.tombstones[mKey];
+        }
+      } else {
+        if (known.hash !== h) {
+          known.hash = h;
+          known.updatedAt = Math.max(Number(known.updatedAt) || 0, explicitTs, now);
+          delete meta.tombstones[mKey];
+        } else if (explicitTs > (Number(known.updatedAt) || 0)) {
+          known.updatedAt = explicitTs;
+        }
+      }
     }
-    // 重新渲染介面
-    if (typeof load === 'function') try { load(); } catch(e){}
-    if (typeof logs === 'function') try { logs(); } catch(e){}
-    if (typeof render === 'function') try { render(); } catch(e){}
-  } catch (e) {
-    console.error('[Sync] 儲存合併資料失敗', e);
+  }
+
+  // 曾存在於 meta.items 但本機清單已移除者 -> 標記軟刪除墓碑
+  for (const mKey of Object.keys(meta.items)) {
+    if (!currentKeys.has(mKey)) {
+      delete meta.items[mKey];
+      meta.tombstones[mKey] = Math.max(Number(meta.tombstones[mKey]) || 0, now);
+    }
+  }
+
+  // 清理過期墓碑
+  for (const [mKey, delTs] of Object.entries(meta.tombstones)) {
+    if (now - Number(delTs) > TOMBSTONE_TTL_MS) {
+      delete meta.tombstones[mKey];
+    }
   }
 }
 
-// 自動備份機制（確保登入前零風險）
+function applyDbToMemoryAndUI(updatedDb, writeToStorage = true) {
+  let finalDb = updatedDb;
+  if (typeof migrate === 'function') {
+    try {
+      finalDb = migrate(updatedDb);
+    } catch (err) {
+      console.error('[Sync] 合併結果未通過核心格式驗證，中止寫入以保護資料:', err);
+      return false;
+    }
+  }
+
+  isApplyingCloudSync = true;
+  try {
+    if (writeToStorage) {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(finalDb));
+    }
+    if (typeof db !== 'undefined' && db && typeof db === 'object') {
+      const prevEquipObj = db.equipment && typeof db.equipment === 'object' ? db.equipment : null;
+      const prevBeanObj = db.beanCatalog && typeof db.beanCatalog === 'object' ? db.beanCatalog : null;
+      for (const k of Object.keys(db)) {
+        if (!(k in finalDb)) delete db[k];
+      }
+      Object.assign(db, finalDb);
+      // 保留 coffee-equipment.js 與 coffee-workspace.js 快取的物件參考，使其無需重整即可即時呈現雲端變更
+      if (prevEquipObj && Array.isArray(prevEquipObj.items) && finalDb.equipment && Array.isArray(finalDb.equipment.items)) {
+        prevEquipObj.version = finalDb.equipment.version ?? 1;
+        prevEquipObj.legacyImported = finalDb.equipment.legacyImported ?? true;
+        prevEquipObj.items.splice(0, prevEquipObj.items.length, ...finalDb.equipment.items);
+        db.equipment = prevEquipObj;
+      }
+      if (prevBeanObj && Array.isArray(prevBeanObj.items) && finalDb.beanCatalog && Array.isArray(finalDb.beanCatalog.items)) {
+        prevBeanObj.version = finalDb.beanCatalog.version ?? 1;
+        prevBeanObj.items.splice(0, prevBeanObj.items.length, ...finalDb.beanCatalog.items);
+        db.beanCatalog = prevBeanObj;
+      }
+      if (typeof selected !== 'undefined' && Array.isArray(db.recipes) && db.recipes.length > 0) {
+        if (!db.recipes.some(r => r.id === selected)) {
+          // eslint-disable-next-line no-global-assign
+          selected = db.recipes[0].id;
+        }
+      }
+    }
+    if (typeof load === 'function') try { load(); } catch (e) {}
+    if (typeof logs === 'function') try { logs(); } catch (e) {}
+    if (typeof render === 'function') try { render(); } catch (e) {}
+  } finally {
+    isApplyingCloudSync = false;
+  }
+  return true;
+}
+
+// -------------------------------------------------------------------------
+// 3. UI 文案與語系連動
+// -------------------------------------------------------------------------
+function renderSyncStatusUI() {
+  const box = document.getElementById('cloudSyncBox');
+  const statusEl = document.getElementById('syncStatusDesc');
+  const btnLogin = document.getElementById('btnGoogleLogin');
+  const btnLogout = document.getElementById('btnGoogleLogout');
+  const btnSync = document.getElementById('btnManualSync');
+
+  if (box) {
+    box.setAttribute('data-coffee-user-text', 'true');
+    const titleEl = box.querySelector('h3');
+    if (titleEl) {
+      titleEl.textContent = L('☁️ 跨裝置雲端同步（Google 帳號）', '☁️ Cross-Device Cloud Sync (Google)');
+    }
+    const hintPs = Array.from(box.querySelectorAll('p.hint'));
+    const noticeP = hintPs[hintPs.length - 1];
+    if (noticeP) {
+      noticeP.innerHTML = L(
+        '※ 首次登入前會自動先下載一份本機 JSON 備份檔，確保資料安全。<br>※ 登入後將自動雙向同步您的配方、沖煮日記、豆庫與器材（支援時間戳衝突比對與同步刪除）。',
+        '※ Before your first sign-in, a local JSON backup is automatically downloaded for safety.<br>※ Once signed in, recipes, brew journal, beans, and equipment sync automatically with conflict resolution.'
+      );
+    }
+  }
+
+  if (btnLogin) btnLogin.textContent = L('使用 Google 登入同步', 'Sign in with Google');
+  if (btnLogout) btnLogout.textContent = L('登出帳號', 'Sign out');
+  if (btnSync) btnSync.textContent = L('立即同步', 'Sync now');
+
+  if (!statusEl) return;
+  statusEl.setAttribute('data-sync-state', lastStateInfo.state);
+
+  switch (lastStateInfo.state) {
+    case 'syncing':
+      statusEl.textContent = L('🔄 正在同步雲端資料...', '🔄 Syncing with cloud...');
+      break;
+    case 'synced':
+      statusEl.textContent = L(
+        `✅ 已同步（帳號：${lastStateInfo.email}，上次：${lastStateInfo.timeStr}）`,
+        `✅ Synced (${lastStateInfo.email}, last: ${lastStateInfo.timeStr})`
+      );
+      break;
+    case 'offline':
+      statusEl.textContent = L(
+        '📡 目前離線。資料已安全儲存在本機，恢復連線後將自動同步。',
+        '📡 Offline. Changes are safely saved locally and will sync once online.'
+      );
+      break;
+    case 'error':
+      statusEl.textContent = L(
+        `⚠️ 同步未完成：${lastStateInfo.detail || '請檢查網路連線'}`,
+        `⚠️ Sync incomplete: ${lastStateInfo.detail || 'Check your network connection'}`
+      );
+      break;
+    case 'connected':
+      statusEl.textContent = L(
+        `☁️ 已連結：${lastStateInfo.email}，準備同步...`,
+        `☁️ Connected: ${lastStateInfo.email}, preparing sync...`
+      );
+      break;
+    default:
+      statusEl.textContent = L(
+        '未登入。資料僅保存在此裝置中。',
+        'Not signed in. Data stays on this device only.'
+      );
+      break;
+  }
+}
+
+// 首次登入防護性自動匯出 JSON
 function exportSafetyBackup() {
   try {
+    if (localStorage.getItem(SAFETY_BACKUP_KEY) === '1') return;
     const current = getLocalDB();
     const hasData = (current.recipes && current.recipes.length > 0) || (current.cups && current.cups.length > 0);
     if (!hasData) return;
@@ -82,181 +382,300 @@ function exportSafetyBackup() {
     a.click();
     a.remove();
     setTimeout(() => URL.revokeObjectURL(url), 10000);
-    console.log('[Sync] 登入前自動防護備份已下載');
+    localStorage.setItem(SAFETY_BACKUP_KEY, '1');
+    console.log('[Sync] 首次登入防護備份已自動下載');
   } catch (e) {
     console.warn('[Sync] 自動下載備份略過', e);
   }
 }
-
-// 雲端與本機雙向同步核心邏輯
-async function syncWithCloud(user) {
-  const statusEl = document.getElementById('syncStatusDesc');
-  const btnSync = document.getElementById('btnManualSync');
-  if (btnSync) btnSync.disabled = true;
-  if (statusEl) statusEl.textContent = '🔄 正在同步雲端資料...';
-
-  try {
-    const userId = user.uid;
-    const local = getLocalDB();
-    const now = Date.now();
-
-    // 1. 讀取雲端各集合
-    const collectionsToSync = ['recipes', 'cups'];
-    const cloudData = { recipes: [], cups: [], beans: [], equipment: [] };
-
-    for (const colName of ['recipes', 'cups', 'beans', 'equipment']) {
-      try {
-        const colRef = collection(dbStore, 'users', userId, colName);
-        const snap = await getDocs(colRef);
-        snap.forEach(d => cloudData[colName].push(d.data()));
-      } catch (err) {
-        console.warn(`[Sync] 讀取集合 ${colName} 失敗:`, err);
-      }
-    }
-
-    // 2. 智慧合併（依 id 比對）
-    let hasLocalChanges = false;
+// -------------------------------------------------------------------------
+// 4. 核心雙向同步（含時間戳比較、墓碑刪除與分批提交）
+// -------------------------------------------------------------------------
+async function commitOpsInChunks(ops) {
+  for (let i = 0; i < ops.length; i += MAX_BATCH_OPS) {
+    const slice = ops.slice(i, i + MAX_BATCH_OPS);
     const batch = writeBatch(dbStore);
-    let batchCount = 0;
-
-    // --- 合併 recipes ---
-    const localRecipes = local.recipes || [];
-    const mergedRecipesMap = new Map();
-    // 先放本機
-    localRecipes.forEach(r => {
-      if (r && r.id) mergedRecipesMap.set(r.id, r);
-    });
-    // 再合併雲端（若本機沒有則加入）
-    cloudData.recipes.forEach(cr => {
-      if (!cr || !cr.id) return;
-      if (!mergedRecipesMap.has(cr.id)) {
-        mergedRecipesMap.set(cr.id, cr);
-        hasLocalChanges = true;
-      }
-    });
-    // 將本機新配方上傳至雲端
-    localRecipes.forEach(r => {
-      if (r && r.id) {
-        const existsInCloud = cloudData.recipes.some(cr => cr.id === r.id);
-        if (!existsInCloud && batchCount < 400) {
-          const docRef = doc(dbStore, 'users', userId, 'recipes', r.id);
-          batch.set(docRef, { ...r, updatedAt: r.updatedAt || now }, { merge: true });
-          batchCount++;
-        }
-      }
-    });
-
-    // --- 合併 cups (沖煮紀錄) ---
-    const localCups = local.cups || [];
-    const mergedCupsMap = new Map();
-    localCups.forEach(c => {
-      if (c && c.id) mergedCupsMap.set(c.id, c);
-    });
-    cloudData.cups.forEach(cc => {
-      if (!cc || !cc.id) return;
-      if (!mergedCupsMap.has(cc.id)) {
-        mergedCupsMap.set(cc.id, cc);
-        hasLocalChanges = true;
-      }
-    });
-    localCups.forEach(c => {
-      if (c && c.id) {
-        const existsInCloud = cloudData.cups.some(cc => cc.id === c.id);
-        if (!existsInCloud && batchCount < 400) {
-          const docRef = doc(dbStore, 'users', userId, 'cups', c.id);
-          batch.set(docRef, { ...c, updatedAt: c.updatedAt || now }, { merge: true });
-          batchCount++;
-        }
-      }
-    });
-
-    // --- 合併 beans (咖啡豆庫) ---
-    const localBeans = (local.beanCatalog && local.beanCatalog.items) || [];
-    const mergedBeansMap = new Map();
-    localBeans.forEach(b => {
-      const bid = b.id || (b.name + '_' + (b.roastDate || ''));
-      mergedBeansMap.set(bid, b);
-    });
-    cloudData.beans.forEach(cb => {
-      const cbid = cb.id || (cb.name + '_' + (cb.roastDate || ''));
-      if (!mergedBeansMap.has(cbid)) {
-        mergedBeansMap.set(cbid, cb);
-        hasLocalChanges = true;
-      }
-    });
-    localBeans.forEach(b => {
-      const bid = b.id || (b.name + '_' + (b.roastDate || ''));
-      const exists = cloudData.beans.some(cb => (cb.id || (cb.name + '_' + (cb.roastDate || ''))) === bid);
-      if (!exists && batchCount < 400) {
-        const docRef = doc(dbStore, 'users', userId, 'beans', bid.replace(/[\/\s]/g, '_'));
-        batch.set(docRef, { ...b, updatedAt: now }, { merge: true });
-        batchCount++;
-      }
-    });
-
-    // --- 合併 equipment (器材) ---
-    const localGear = (local.equipment && local.equipment.items) || [];
-    const mergedGearMap = new Map();
-    localGear.forEach(g => {
-      if (g && g.id) mergedGearMap.set(g.id, g);
-    });
-    cloudData.equipment.forEach(cg => {
-      if (!cg || !cg.id) return;
-      if (!mergedGearMap.has(cg.id)) {
-        mergedGearMap.set(cg.id, cg);
-        hasLocalChanges = true;
-      }
-    });
-    localGear.forEach(g => {
-      if (g && g.id) {
-        const exists = cloudData.equipment.some(cg => cg.id === g.id);
-        if (!exists && batchCount < 400) {
-          const docRef = doc(dbStore, 'users', userId, 'equipment', g.id);
-          batch.set(docRef, { ...g, updatedAt: now }, { merge: true });
-          batchCount++;
-        }
-      }
-    });
-
-    // 提交批次上傳至 Firestore
-    if (batchCount > 0) {
-      await batch.commit();
-      console.log(`[Sync] 已上傳 ${batchCount} 筆本機新資料至雲端`);
+    for (const op of slice) {
+      batch.set(op.ref, op.data);
     }
-
-    // 若有自雲端拉取新資料，更新本機 db
-    if (hasLocalChanges) {
-      const updatedDB = {
-        ...local,
-        recipes: Array.from(mergedRecipesMap.values()),
-        cups: Array.from(mergedCupsMap.values()),
-        beanCatalog: { version: 1, items: Array.from(mergedBeansMap.values()) },
-        equipment: { items: Array.from(mergedGearMap.values()) }
-      };
-      saveLocalDB(updatedDB);
-    }
-
-    // 記錄最後同步時間
-    const timeStr = new Date().toLocaleTimeString('zh-TW', { hour: '2-digit', minute: '2-digit' });
-    if (statusEl) {
-      statusEl.textContent = `✅ 已同步（帳號：${user.email}，上次：${timeStr}）`;
-    }
-    if (typeof msg === 'function') {
-      msg(`雲端同步完成（${timeStr}）`);
-    }
-  } catch (err) {
-    console.error('[Sync] 同步過程發生錯誤:', err);
-    if (statusEl) {
-      statusEl.textContent = `⚠️ 同步未完成：${err.message || '請檢查網路連線'}`;
-    }
-  } finally {
-    if (btnSync) btnSync.disabled = false;
+    await batch.commit();
   }
 }
 
-// 監聽登入狀態改變
+async function syncWithCloud(user) {
+  if (!user) return;
+  if (typeof navigator !== 'undefined' && navigator.onLine === false) {
+    lastStateInfo = { ...lastStateInfo, state: 'offline', email: user.email || '' };
+    renderSyncStatusUI();
+    return;
+  }
+  if (isSyncInProgress) {
+    pendingSyncAfterFinish = true;
+    return;
+  }
+
+  isSyncInProgress = true;
+  pendingSyncAfterFinish = false;
+  const btnSync = document.getElementById('btnManualSync');
+  if (btnSync) btnSync.disabled = true;
+
+  lastStateInfo = { ...lastStateInfo, state: 'syncing', email: user.email || '' };
+  renderSyncStatusUI();
+
+  try {
+    const userId = user.uid;
+    localStorage.setItem(LAST_UID_KEY, userId);
+
+    const now = Date.now();
+    const local = getLocalDB();
+    const meta = loadSyncMeta(userId);
+    reconcileLocalDiff(local, meta, now, false);
+
+    // 1. 讀取雲端各集合（同時支援新舊 docId 對應）
+    const colNames = ['recipes', 'cups', 'beans', 'equipment'];
+    const cloudMaps = { recipes: new Map(), cups: new Map(), beans: new Map(), equipment: new Map() };
+
+    for (const colName of colNames) {
+      const colRef = collection(dbStore, 'users', userId, colName);
+      const snap = await getDocs(colRef);
+      snap.forEach(d => {
+        const data = d.data();
+        const id = getItemId(colName, data) || d.id;
+        if (!id) return;
+        const prev = cloudMaps[colName].get(id);
+        const curTs = Math.max(toEpochMs(data.updatedAt), toEpochMs(data.deletedAt));
+        const prevTs = prev ? Math.max(toEpochMs(prev.data.updatedAt), toEpochMs(prev.data.deletedAt)) : -1;
+        if (!prev || curTs >= prevTs) {
+          cloudMaps[colName].set(id, { docId: d.id, data });
+        }
+      });
+    }
+
+    // 2. 逐集合執行雙向衝突比對與墓碑合併
+    const pendingOps = [];
+    const mergedResult = {};
+    let hasLocalChanges = false;
+    const nextMetaItems = {};
+    const nextTombstones = { ...meta.tombstones };
+
+    for (const colName of colNames) {
+      const localArr = getCollectionArray(local, colName);
+      const localMap = new Map();
+      for (const item of localArr) {
+        const id = getItemId(colName, item);
+        if (id) localMap.set(id, item);
+      }
+
+      const cloudMap = cloudMaps[colName];
+      const allIds = new Set([...localMap.keys(), ...cloudMap.keys()]);
+      for (const mKey of Object.keys(meta.tombstones)) {
+        if (mKey.startsWith(colName + ':')) {
+          allIds.add(mKey.slice(colName.length + 1));
+        }
+      }
+
+      const mergedArr = [];
+
+      for (const id of allIds) {
+        const mKey = `${colName}:${id}`;
+        const localItem = localMap.get(id);
+        const known = meta.items[mKey];
+        const localTs = localItem
+          ? Math.max(known ? (Number(known.updatedAt) || 0) : 0, toEpochMs(localItem.updatedAt))
+          : 0;
+        const localTombTs = Number(meta.tombstones[mKey]) || 0;
+
+        const cloudEntry = cloudMap.get(id);
+        const cloudRaw = cloudEntry ? cloudEntry.data : null;
+        const cloudUpdatedTs = cloudRaw ? toEpochMs(cloudRaw.updatedAt) : 0;
+        const cloudDeletedTs = cloudRaw ? toEpochMs(cloudRaw.deletedAt) : 0;
+        const cloudIsDeleted = Boolean(cloudRaw && cloudDeletedTs > 0 && cloudDeletedTs >= cloudUpdatedTs);
+        const docIdToUse = cloudEntry ? cloudEntry.docId : safeDocId(id);
+
+        if (localItem) {
+          const localHash = hashItem(localItem);
+
+          if (!cloudRaw) {
+            // 僅本機存在：上傳雲端
+            const stamp = localTs || now;
+            mergedArr.push(localItem);
+            nextMetaItems[mKey] = { hash: localHash, updatedAt: stamp };
+            delete nextTombstones[mKey];
+            pendingOps.push({
+              ref: doc(dbStore, 'users', userId, colName, docIdToUse),
+              data: prepareCloudPayload(colName, id, localItem, stamp)
+            });
+          } else if (cloudIsDeleted) {
+            if (localTs > cloudDeletedTs) {
+              // 本機在遠端刪除之後又新建或編輯過 -> 本機勝出並覆寫雲端
+              mergedArr.push(localItem);
+              nextMetaItems[mKey] = { hash: localHash, updatedAt: localTs };
+              delete nextTombstones[mKey];
+              pendingOps.push({
+                ref: doc(dbStore, 'users', userId, colName, docIdToUse),
+                data: prepareCloudPayload(colName, id, localItem, localTs)
+              });
+            } else {
+              // 遠端已刪除較新 -> 本機移除
+              hasLocalChanges = true;
+              nextTombstones[mKey] = cloudDeletedTs;
+            }
+          } else {
+            // 雙方皆有效存在：比較內容雜湊與時間戳
+            const cloudClean = cleanItemForLocal(colName, cloudRaw);
+            const cloudHash = hashItem(cloudClean);
+
+            if (localHash === cloudHash) {
+              mergedArr.push(localItem);
+              nextMetaItems[mKey] = {
+                hash: localHash,
+                updatedAt: Math.max(localTs, cloudUpdatedTs, now)
+              };
+              delete nextTombstones[mKey];
+            } else if (localTs > cloudUpdatedTs) {
+              // 本機較新 -> 保留本機並推上雲端
+              mergedArr.push(localItem);
+              nextMetaItems[mKey] = { hash: localHash, updatedAt: localTs };
+              delete nextTombstones[mKey];
+              pendingOps.push({
+                ref: doc(dbStore, 'users', userId, colName, docIdToUse),
+                data: prepareCloudPayload(colName, id, localItem, localTs)
+              });
+            } else if (cloudUpdatedTs > localTs) {
+              // 雲端較新 -> 下拉更新本機
+              mergedArr.push(cloudClean);
+              nextMetaItems[mKey] = { hash: cloudHash, updatedAt: cloudUpdatedTs };
+              delete nextTombstones[mKey];
+              hasLocalChanges = true;
+            } else {
+              // 時間戳相等但內容不同時保留本機（安全不覆寫）並推新時間戳
+              const stamp = now;
+              mergedArr.push(localItem);
+              nextMetaItems[mKey] = { hash: localHash, updatedAt: stamp };
+              pendingOps.push({
+                ref: doc(dbStore, 'users', userId, colName, docIdToUse),
+                data: prepareCloudPayload(colName, id, localItem, stamp)
+              });
+            }
+          }
+        } else {
+          // 本機目前無此筆資料
+          if (cloudRaw && !cloudIsDeleted) {
+            if (localTombTs >= cloudUpdatedTs && localTombTs > 0) {
+              // 本機在更晚時間點主動刪除此筆 -> 上傳軟刪除墓碑
+              nextTombstones[mKey] = localTombTs;
+              pendingOps.push({
+                ref: doc(dbStore, 'users', userId, colName, docIdToUse),
+                data: prepareCloudPayload(colName, id, null, localTombTs, localTombTs)
+              });
+            } else {
+              // 雲端新資料（或他處於刪除後重新編輯） -> 拉回本機
+              const cloudClean = cleanItemForLocal(colName, cloudRaw);
+              const cloudHash = hashItem(cloudClean);
+              mergedArr.push(cloudClean);
+              nextMetaItems[mKey] = { hash: cloudHash, updatedAt: cloudUpdatedTs || now };
+              delete nextTombstones[mKey];
+              hasLocalChanges = true;
+            }
+          } else if (cloudIsDeleted && cloudDeletedTs > 0) {
+            nextTombstones[mKey] = Math.max(localTombTs, cloudDeletedTs);
+          }
+        }
+      }
+
+      mergedResult[colName] = mergedArr;
+    }
+
+    // 核心驗證保護：vd(d) 要求 recipes 至少 1 筆
+    if (mergedResult.recipes.length === 0 && local.recipes && local.recipes.length > 0) {
+      const keep = local.recipes[0];
+      mergedResult.recipes.push(keep);
+      hasLocalChanges = true;
+      if (keep.id) {
+        nextMetaItems[`recipes:${keep.id}`] = { hash: hashItem(keep), updatedAt: now };
+        delete nextTombstones[`recipes:${keep.id}`];
+      }
+    }
+
+    // 3. 先提交雲端批次寫入，再寫回本機（避免網路失敗時基準不一致）
+    if (pendingOps.length > 0) {
+      await commitOpsInChunks(pendingOps);
+      console.log(`[Sync] 已同步 ${pendingOps.length} 筆變更至雲端`);
+    }
+
+    if (hasLocalChanges) {
+      const updatedDB = {
+        ...local,
+        version: 2,
+        recipes: mergedResult.recipes,
+        cups: mergedResult.cups,
+        beanCatalog: { version: 1, items: mergedResult.beans },
+        equipment: {
+          version: 1,
+          legacyImported: local.equipment?.legacyImported ?? true,
+          items: mergedResult.equipment
+        }
+      };
+      applyDbToMemoryAndUI(updatedDB, true);
+    }
+
+    saveSyncMeta(userId, {
+      lastSyncedAt: now,
+      items: nextMetaItems,
+      tombstones: nextTombstones
+    });
+
+    const timeStr = new Date().toLocaleTimeString(isEn() ? 'en-US' : 'zh-TW', {
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+    lastStateInfo = { state: 'synced', email: user.email || '', timeStr, detail: '' };
+    renderSyncStatusUI();
+
+    if (typeof msg === 'function' && (hasLocalChanges || pendingOps.length > 0)) {
+      msg(L(`雲端同步完成（${timeStr}）`, `Cloud sync finished (${timeStr})`));
+    }
+  } catch (err) {
+    console.error('[Sync] 同步過程發生錯誤:', err);
+    const offlineErr = typeof navigator !== 'undefined' && navigator.onLine === false;
+    lastStateInfo = {
+      state: offlineErr ? 'offline' : 'error',
+      email: user.email || '',
+      timeStr: lastStateInfo.timeStr,
+      detail: err && err.message ? err.message : ''
+    };
+    renderSyncStatusUI();
+  } finally {
+    isSyncInProgress = false;
+    if (btnSync) btnSync.disabled = false;
+    if (pendingSyncAfterFinish && auth.currentUser) {
+      pendingSyncAfterFinish = false;
+      syncWithCloud(auth.currentUser);
+    }
+  }
+}
+
+// -------------------------------------------------------------------------
+// 5. 事件綁定、自動追蹤與多頁籤同步
+// -------------------------------------------------------------------------
+function recordLocalSaveMutation() {
+  if (isApplyingCloudSync) return;
+  const uid = getActiveMetaUid();
+  const meta = loadSyncMeta(uid);
+  reconcileLocalDiff(getLocalDB(), meta, Date.now(), true);
+  saveSyncMeta(uid, meta);
+  triggerDebouncedSync();
+}
+
+function triggerDebouncedSync() {
+  if (!auth.currentUser) return;
+  clearTimeout(syncTimer);
+  syncTimer = setTimeout(() => {
+    if (auth.currentUser) syncWithCloud(auth.currentUser);
+  }, 1500);
+}
+
 onAuthStateChanged(auth, user => {
-  const statusEl = document.getElementById('syncStatusDesc');
   const btnLogin = document.getElementById('btnGoogleLogin');
   const btnLogout = document.getElementById('btnGoogleLogout');
   const btnSync = document.getElementById('btnManualSync');
@@ -265,79 +684,120 @@ onAuthStateChanged(auth, user => {
     if (btnLogin) btnLogin.hidden = true;
     if (btnLogout) btnLogout.hidden = false;
     if (btnSync) btnSync.hidden = false;
-    if (statusEl) statusEl.textContent = `☁️ 已連結：${user.email}，準備同步...`;
+    lastStateInfo = { ...lastStateInfo, state: 'connected', email: user.email || '' };
+    renderSyncStatusUI();
     syncWithCloud(user);
   } else {
     if (btnLogin) btnLogin.hidden = false;
     if (btnLogout) btnLogout.hidden = true;
     if (btnSync) btnSync.hidden = true;
-    if (statusEl) statusEl.textContent = '未登入。資料僅保存在此裝置中。';
+    lastStateInfo = { state: 'idle', email: '', timeStr: '', detail: '' };
+    renderSyncStatusUI();
   }
 });
 
-// 綁定按鈕事件
-window.addEventListener('DOMContentLoaded', () => {
+function bindUIControls() {
   const btnLogin = document.getElementById('btnGoogleLogin');
   const btnLogout = document.getElementById('btnGoogleLogout');
   const btnSync = document.getElementById('btnManualSync');
 
-  if (btnLogin) {
+  if (btnLogin && !btnLogin._syncBound) {
+    btnLogin._syncBound = true;
     btnLogin.onclick = async () => {
       try {
-        // 首登前先執行防護性自動備份
         exportSafetyBackup();
         await signInWithPopup(auth, provider);
       } catch (err) {
         console.error('[Sync] 登入失敗:', err);
-        alert(`登入未完成：${err.message || err.code}`);
+        alert(L(`登入未完成：${err.message || err.code}`, `Sign-in incomplete: ${err.message || err.code}`));
       }
     };
   }
 
-  if (btnLogout) {
+  if (btnLogout && !btnLogout._syncBound) {
+    btnLogout._syncBound = true;
     btnLogout.onclick = async () => {
       try {
         await signOut(auth);
-        if (typeof msg === 'function') msg('已登出雲端同步，本機資料已完整保留');
+        if (typeof msg === 'function') {
+          msg(L('已登出雲端同步，本機資料已完整保留', 'Signed out of cloud sync; local data is preserved'));
+        }
       } catch (err) {
         console.error('[Sync] 登出失敗:', err);
       }
     };
   }
 
-  if (btnSync) {
+  if (btnSync && !btnSync._syncBound) {
+    btnSync._syncBound = true;
     btnSync.onclick = () => {
-      if (auth.currentUser) {
-        syncWithCloud(auth.currentUser);
-      }
+      if (auth.currentUser) syncWithCloud(auth.currentUser);
     };
   }
-});
 
-// 攔截並監聽本機 save()，自動觸發雲端同步
+  renderSyncStatusUI();
+}
+
+if (document.readyState === 'loading') {
+  window.addEventListener('DOMContentLoaded', bindUIControls);
+} else {
+  bindUIControls();
+}
+
 if (typeof window !== 'undefined') {
-  let syncTimer = null;
-  const triggerDebouncedSync = () => {
-    if (auth.currentUser) {
-      clearTimeout(syncTimer);
-      syncTimer = setTimeout(() => {
-        syncWithCloud(auth.currentUser);
-      }, 1500);
-    }
-  };
-
-  // 當 localStorage 更新時監聽
+  // 多頁籤同步：他頁更新 localStorage 時同步刷新本頁記憶體與畫面
   window.addEventListener('storage', e => {
-    if (e.key === STORAGE_KEY) triggerDebouncedSync();
+    if (e.key === STORAGE_KEY && e.newValue && !isApplyingCloudSync) {
+      try {
+        const parsed = JSON.parse(e.newValue);
+        applyDbToMemoryAndUI(parsed, false);
+        triggerDebouncedSync();
+      } catch (err) {
+        console.warn('[Sync] 跨頁籤解析失敗:', err);
+      }
+    }
   });
 
-  // 攔截 save
-  const origSave = window.save;
-  if (typeof origSave === 'function') {
-    window.save = function(...args) {
-      const res = origSave.apply(this, args);
-      if (res) triggerDebouncedSync();
+  // 網路恢復連線時自動補同步
+  window.addEventListener('online', () => {
+    if (auth.currentUser) syncWithCloud(auth.currentUser);
+  });
+
+  // 監聽語系切換
+  new MutationObserver(() => renderSyncStatusUI())
+    .observe(document.documentElement, { attributes: true, attributeFilter: ['lang'] });
+
+  // 雙重攔截：save() ＋ Storage.prototype.setItem
+  if (typeof window.save === 'function' && !window.save._syncWrapped) {
+    const origSave = window.save;
+    const wrappedSave = function (...args) {
+      inWindowSave = true;
+      let res = false;
+      try {
+        res = origSave.apply(this, args);
+      } finally {
+        inWindowSave = false;
+      }
+      if (res) recordLocalSaveMutation();
       return res;
     };
+    wrappedSave._syncWrapped = true;
+    window.save = wrappedSave;
+  }
+
+  try {
+    const origSetItem = Storage.prototype.setItem;
+    if (!origSetItem._syncWrapped) {
+      const patchedSetItem = function (k, v) {
+        origSetItem.call(this, k, v);
+        if (this === localStorage && k === STORAGE_KEY && !isApplyingCloudSync && !inWindowSave) {
+          recordLocalSaveMutation();
+        }
+      };
+      patchedSetItem._syncWrapped = true;
+      Storage.prototype.setItem = patchedSetItem;
+    }
+  } catch (e) {
+    console.warn('[Sync] setItem hook skipped', e);
   }
 }
