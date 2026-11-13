@@ -777,7 +777,10 @@
     }
 
     const rogueHeader = document.getElementById('coffeeAppHeader');
-    if (rogueHeader && rogueHeader !== header && rogueHeader.children.length === 0) {
+    if (rogueHeader && rogueHeader !== header) {
+      while (rogueHeader.firstChild) {
+        header.append(rogueHeader.firstChild);
+      }
       rogueHeader.remove();
     }
     updateSyncPill();
@@ -792,19 +795,22 @@
     const state = desc ? desc.getAttribute('data-sync-state') : '';
     const txt = desc ? (desc.textContent || '') : '';
 
-    dot.classList.remove('online', 'warn');
+    let nextDotClass = 'cv-sync-dot';
+    let nextLabel = '';
     if (state === 'synced' || txt.includes('已同步') || txt.includes('已連結') || txt.includes('Synced')) {
-      dot.classList.add('online');
-      label.textContent = L('☁️ 雲端已同步', '☁️ Cloud Synced');
+      nextDotClass = 'cv-sync-dot online';
+      nextLabel = L('☁️ 雲端已同步', '☁️ Cloud Synced');
     } else if (state === 'syncing' || txt.includes('正在同步') || txt.includes('Syncing')) {
-      dot.classList.add('online');
-      label.textContent = L('🔄 同步中...', '🔄 Syncing...');
+      nextDotClass = 'cv-sync-dot online';
+      nextLabel = L('🔄 同步中...', '🔄 Syncing...');
     } else if (state === 'offline' || state === 'error') {
-      dot.classList.add('warn');
-      label.textContent = L('☁️ 離線待同步', '☁️ Offline');
+      nextDotClass = 'cv-sync-dot warn';
+      nextLabel = L('☁️ 離線待同步', '☁️ Offline');
     } else {
-      label.textContent = L('☁️ 登入雲端同步', '☁️ Cloud Sync');
+      nextLabel = L('☁️ 登入雲端同步', '☁️ Cloud Sync');
     }
+    if (dot.className !== nextDotClass) dot.className = nextDotClass;
+    if (label.textContent !== nextLabel) label.textContent = nextLabel;
   }
 
   // =========================================================================
@@ -1328,9 +1334,9 @@
         if (origCompare) origCompare.call(this, e);
         enhanceComparisonRadar();
       };
-      compareBtn._cvWrapped = true;      
+      compareBtn._cvWrapped = true;
     }
-    
+
     // 監聽延遲載入的外掛是否動態插入 #coffeeAppHeader、更改豆庫或更改語系
     let repairingHeader = false;
     const headerBar = document.getElementById('cvHeaderBar');
@@ -1342,7 +1348,11 @@
           (document.getElementById('coffeeLanguageSwitch') && !headerBar.querySelector('#coffeeLanguageSwitch'));
         if (broken) {
           repairingHeader = true;
-          try { ensureHeaderLayout(); } finally { repairingHeader = false; }
+          try {
+            ensureHeaderLayout();
+          } finally {
+            queueMicrotask(() => { repairingHeader = false; });
+          }
         }
       }).observe(headerBar, { childList: true, subtree: true });
     }

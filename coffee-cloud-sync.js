@@ -321,22 +321,30 @@ function applyDbToMemoryAndUI(updatedDb, writeToStorage = true) {
 // -------------------------------------------------------------------------
 // 3. UI 文案與語系連動
 // -------------------------------------------------------------------------
+function setTextIfChanged(el, text) {
+  if (el && el.textContent !== text) el.textContent = text;
+}
+
+function setAttrIfChanged(el, attr, val) {
+  if (el && el.getAttribute(attr) !== val) el.setAttribute(attr, val);
+}
+
 function renderSyncStatusUI() {
   const box = document.getElementById('cloudSyncBox');
   const statusEl = document.getElementById('syncStatusDesc');
   const btnLogin = document.getElementById('btnGoogleLogin');
   const btnLogout = document.getElementById('btnGoogleLogout');
   const btnSync = document.getElementById('btnManualSync');
+  const currentLang = document.documentElement.lang || 'zh-Hant';
 
   if (box) {
-    box.setAttribute('data-coffee-user-text', 'true');
+    setAttrIfChanged(box, 'data-coffee-user-text', 'true');
     const titleEl = box.querySelector('h3');
-    if (titleEl) {
-      titleEl.textContent = L('☁️ 跨裝置雲端同步（Google 帳號）', '☁️ Cross-Device Cloud Sync (Google)');
-    }
+    setTextIfChanged(titleEl, L('☁️ 跨裝置雲端同步（Google 帳號）', '☁️ Cross-Device Cloud Sync (Google)'));
     const hintPs = Array.from(box.querySelectorAll('p.hint'));
     const noticeP = hintPs[hintPs.length - 1];
-    if (noticeP) {
+    if (noticeP && noticeP.getAttribute('data-sync-lang') !== currentLang) {
+      noticeP.setAttribute('data-sync-lang', currentLang);
       noticeP.innerHTML = L(
         '※ 首次登入前會自動先下載一份本機 JSON 備份檔，確保資料安全。<br>※ 登入後將自動雙向同步您的配方、沖煮日記、豆庫與器材（支援時間戳衝突比對與同步刪除）。',
         '※ Before your first sign-in, a local JSON backup is automatically downloaded for safety.<br>※ Once signed in, recipes, brew journal, beans, and equipment sync automatically with conflict resolution.'
@@ -344,48 +352,50 @@ function renderSyncStatusUI() {
     }
   }
 
-  if (btnLogin) btnLogin.textContent = L('使用 Google 登入同步', 'Sign in with Google');
-  if (btnLogout) btnLogout.textContent = L('登出帳號', 'Sign out');
-  if (btnSync) btnSync.textContent = L('立即同步', 'Sync now');
+  setTextIfChanged(btnLogin, L('使用 Google 登入同步', 'Sign in with Google'));
+  setTextIfChanged(btnLogout, L('登出帳號', 'Sign out'));
+  setTextIfChanged(btnSync, L('立即同步', 'Sync now'));
 
   if (!statusEl) return;
-  statusEl.setAttribute('data-sync-state', lastStateInfo.state);
+  setAttrIfChanged(statusEl, 'data-sync-state', lastStateInfo.state);
 
+  let nextStatusText = '';
   switch (lastStateInfo.state) {
     case 'syncing':
-      statusEl.textContent = L('🔄 正在同步雲端資料...', '🔄 Syncing with cloud...');
+      nextStatusText = L('🔄 正在同步雲端資料...', '🔄 Syncing with cloud...');
       break;
     case 'synced':
-      statusEl.textContent = L(
+      nextStatusText = L(
         `✅ 已同步（帳號：${lastStateInfo.email}，上次：${lastStateInfo.timeStr}）`,
         `✅ Synced (${lastStateInfo.email}, last: ${lastStateInfo.timeStr})`
       );
       break;
     case 'offline':
-      statusEl.textContent = L(
+      nextStatusText = L(
         '📡 目前離線。資料已安全儲存在本機，恢復連線後將自動同步。',
         '📡 Offline. Changes are safely saved locally and will sync once online.'
       );
       break;
     case 'error':
-      statusEl.textContent = L(
+      nextStatusText = L(
         `⚠️ 同步未完成：${lastStateInfo.detail || '請檢查網路連線'}`,
         `⚠️ Sync incomplete: ${lastStateInfo.detail || 'Check your network connection'}`
       );
       break;
     case 'connected':
-      statusEl.textContent = L(
+      nextStatusText = L(
         `☁️ 已連結：${lastStateInfo.email}，準備同步...`,
         `☁️ Connected: ${lastStateInfo.email}, preparing sync...`
       );
       break;
     default:
-      statusEl.textContent = L(
+      nextStatusText = L(
         '未登入。資料僅保存在此裝置中。',
         'Not signed in. Data stays on this device only.'
       );
       break;
   }
+  setTextIfChanged(statusEl, nextStatusText);
 }
 
 // 首次登入防護性自動匯出 JSON
@@ -788,9 +798,14 @@ if (typeof window !== 'undefined') {
     if (auth.currentUser) syncWithCloud(auth.currentUser);
   });
 
-  // 監聽語系切換
-  new MutationObserver(() => renderSyncStatusUI())
-    .observe(document.documentElement, { attributes: true, attributeFilter: ['lang'] });
+  // 監聽語系切換（必須比對語系是否真的改變，否則會與 coffee-i18n.js 的 apply() 形成無限微任務迴圈）
+  let lastSyncLang = document.documentElement.lang;
+  new MutationObserver(() => {
+    const nextLang = document.documentElement.lang;
+    if (nextLang === lastSyncLang) return;
+    lastSyncLang = nextLang;
+    renderSyncStatusUI();
+  }).observe(document.documentElement, { attributes: true, attributeFilter: ['lang'] });
 
   // 雙重攔截：save() ＋ Storage.prototype.setItem
   if (typeof window.save === 'function' && !window.save._syncWrapped) {
