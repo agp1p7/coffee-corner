@@ -118,6 +118,30 @@ function cleanItemForLocal(colName, docData) {
   if (colName !== 'cups' || typeof copy.updatedAt === 'number') {
     delete copy.updatedAt;
   }
+  if (colName === 'equipment') {
+    const type = copy.type === 'grinder' ? 'grinder' : 'dripper';
+    copy.type = type;
+    copy.id = typeof copy.id === 'string' && copy.id.trim() ? copy.id.trim().slice(0, 159) : 'eq_' + hashItem(copy);
+    copy.name = String(copy.name ?? '').trim().slice(0, 160);
+    copy.brand = String(copy.brand ?? '').trim().slice(0, 160);
+    copy.model = String(copy.model ?? '').trim().slice(0, 160);
+    copy.shape = type === 'dripper' ? String(copy.shape ?? '其他／不適用').trim().slice(0, 160) || '其他／不適用' : '';
+    copy.material = type === 'dripper' ? String(copy.material ?? '其他／未填').trim().slice(0, 160) || '其他／未填' : '';
+    copy.unit = type === 'grinder' ? String(copy.unit ?? '').trim().slice(0, 160) : '';
+    copy.active = typeof copy.active === 'boolean' ? copy.active : true;
+    if (copy.review !== undefined && typeof copy.review !== 'boolean') delete copy.review;
+  } else if (colName === 'beans') {
+    copy.id = typeof copy.id === 'string' && copy.id.trim() ? copy.id.trim().slice(0, 159) : 'bean_' + hashItem(copy);
+    copy.active = typeof copy.active === 'boolean' ? copy.active : true;
+    for (const k of ['bean', 'roaster', 'origin', 'process', 'roast', 'roastDate', 'openDate']) {
+      copy[k] = String(copy[k] ?? '').trim().slice(0, 5000);
+    }
+    if (copy.beanFlavor !== undefined && copy.beanFlavor !== null) {
+      copy.beanFlavor = String(copy.beanFlavor).trim().slice(0, 3000);
+    } else {
+      delete copy.beanFlavor;
+    }
+  }
   return copy;
 }
 
@@ -388,6 +412,7 @@ function exportSafetyBackup() {
     console.warn('[Sync] 自動下載備份略過', e);
   }
 }
+
 // -------------------------------------------------------------------------
 // 4. 核心雙向同步（含時間戳比較、墓碑刪除與分批提交）
 // -------------------------------------------------------------------------

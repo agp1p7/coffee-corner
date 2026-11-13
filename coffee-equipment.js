@@ -7,7 +7,27 @@ function itemOK(x){return x&&typeof x.id==='string'&&x.id.length>0&&x.id.length<
 function catalogOK(c){return c&&c.version===1&&(c.legacyImported===undefined||typeof c.legacyImported==='boolean')&&Array.isArray(c.items)&&c.items.length<=1000&&c.items.every(itemOK)&&new Set(c.items.map(x=>x.id)).size===c.items.length;}
 function key(x){return JSON.stringify([x.type,x.name,x.type==='dripper'?x.shape:'',x.type==='dripper'?x.material:'']);}
 function snapshot(r,type){return {id:typeof r[type+'EquipmentId']==='string'?r[type+'EquipmentId']:'',type,name:String(r[type]||''),brand:'',model:'',shape:type==='dripper'?String(r.shape||SH[4]):'',material:type==='dripper'?String(r.material||MA[4]):'',unit:type==='grinder'?String(r.grindUnit||''):'',active:true,review:true};}
-function seed(data){if(data.equipment===undefined)data.equipment={version:1,items:[]};if(!catalogOK(data.equipment))throw Error('Invalid equipment catalog');const c=data.equipment;if(c.legacyImported)return c;const seen=new Set(c.items.map(key));for(const r of [...data.recipes,...data.cups.map(x=>x.recipe)])for(const t of ['dripper','grinder']){if(r[t+'EquipmentId']||!r[t]||c.items.length>=1000)continue;const x=snapshot(r,t);x.id=id();if(itemOK(x)&&!seen.has(key(x))){c.items.push(x);seen.add(key(x));}}c.legacyImported=true;return c;}
+function str160(v,fallback=''){return typeof v==='string'?v.trim().slice(0,160):v===null||v===undefined?fallback:String(v).trim().slice(0,160);}
+function normalizeItem(raw,seenIds){
+ if(!raw||typeof raw!=='object'||Array.isArray(raw))return null;
+ const name=str160(raw.name);if(!name)return null;
+ const type=raw.type==='grinder'||raw.type==='dripper'?raw.type:(str160(raw.unit)?'grinder':'dripper');
+ let itemId=str160(raw.id);if(!itemId||itemId.length>=160||seenIds.has(itemId))itemId=id();
+ seenIds.add(itemId);
+ const shapeRaw=str160(raw.shape,SH[4]),matRaw=str160(raw.material,MA[4]);
+ const out={id:itemId,type,name,brand:str160(raw.brand),model:str160(raw.model),shape:type==='dripper'?(SH.includes(shapeRaw)?shapeRaw:SH[4]):'',material:type==='dripper'?(MA.includes(matRaw)?matRaw:MA[4]):'',unit:type==='grinder'?str160(raw.unit):'',active:typeof raw.active==='boolean'?raw.active:true};
+ if(typeof raw.review==='boolean')out.review=raw.review;
+ return itemOK(out)?out:null;
+}
+function normalizeCatalog(data){
+ const raw=data&&data.equipment;
+ if(!raw||typeof raw!=='object'||Array.isArray(raw)){data.equipment={version:1,items:[]};return data.equipment;}
+ const seenIds=new Set(),items=[];
+ if(Array.isArray(raw.items))for(const x of raw.items){if(items.length>=1000)break;const clean=normalizeItem(x,seenIds);if(clean)items.push(clean);}
+ const out={version:1,items};if(typeof raw.legacyImported==='boolean')out.legacyImported=raw.legacyImported;
+ data.equipment=out;return out;
+}
+function seed(data){const had=data.equipment!==undefined,prev=had?JSON.stringify(data.equipment):'';if(!had)data.equipment={version:1,items:[]};else normalizeCatalog(data);if(!catalogOK(data.equipment))throw Error('Invalid equipment catalog');const c=data.equipment;if(c.legacyImported){if(had&&prev!==JSON.stringify(c)&&typeof save==='function')try{save();}catch(e){}return c;}const seen=new Set(c.items.map(key));for(const r of [...data.recipes,...data.cups.map(x=>x.recipe)])for(const t of ['dripper','grinder']){if(r[t+'EquipmentId']||!r[t]||c.items.length>=1000)continue;const x=snapshot(r,t);x.id=id();if(itemOK(x)&&!seen.has(key(x))){c.items.push(x);seen.add(key(x));}}c.legacyImported=true;if(had&&prev!==JSON.stringify(c)&&typeof save==='function')try{save();}catch(e){}return c;}
 if(typeof module!=='undefined'&&module.exports)module.exports={number,itemOK,catalogOK,key,snapshot,seed};
 if(typeof document==='undefined'||document.getElementById('coffeeEquipmentManager'))return;
 const $=x=>document.getElementById(x),en=()=>document.documentElement.lang==='en',L=(a,b)=>en()?b:a;
@@ -15,7 +35,7 @@ let bound=null,catalog,legacy='',busy=false,choice={dripper:null,grinder:null},t
 function ensure(){if(bound!==db){catalog=seed(db);bound=db;}return catalog;}
 try{ensure();}catch(error){msg(L('器材資料格式不正確，原資料未更動；請先備份。','Invalid equipment data. Existing data was not changed; back up first.'));return;}
 const oldRead=read,oldFill=fill,oldLock=lock,oldMigrate=migrate;
-migrate=function(data){const next=oldMigrate(data);if(next.equipment!==undefined&&!catalogOK(next.equipment))throw Error('Invalid equipment catalog');return next;};
+migrate=function(data){const next=oldMigrate(data);if(next.equipment!==undefined){normalizeCatalog(next);if(!catalogOK(next.equipment))throw Error('Invalid equipment catalog');}return next;};
 function E(tag,text){const x=document.createElement(tag);if(text!==undefined)x.textContent=text;return x;}
 const labels=[],fields=[],buttons=[];
 function label(parent,a,b,input){const w=E('label'),s=E('span');labels.push([s,a,b]);w.append(s,input);parent.append(w);return w;}

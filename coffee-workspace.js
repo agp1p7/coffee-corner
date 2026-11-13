@@ -22,9 +22,24 @@ const labels=[];function prune(){for(let i=labels.length-1;i>=0;i--)if(!labels[i
 function field(p,a,b,value,type='text'){const w=E('label'),s=text(E('span'),a,b),x=E(Array.isArray(type)?'select':type==='textarea'?'textarea':'input');if(Array.isArray(type)){for(const v of [...new Set([...type,value])]){const o=E('option',v);o.value=v;x.append(o);}}else{if(type!=='textarea')x.type=type;x.maxLength=5000;if(type==='number'){x.min='0';x.step='any';}}x.value=value??'';w.append(s,x);p.append(w);return x;}
 function detail(p,a,b){const d=E('details');d.append(text(E('summary'),a,b));p.append(d);return d;}
 function modal(){const d=own(E('dialog'));d.className='workspace-dialog';document.body.append(d);return d;}
-let bound=null;function beans(){if(bound!==db){if(db.beanCatalog===undefined){const items=[];for(const r of [...db.recipes,...db.cups.map(c=>c.recipe)]){if(!r.bean||items.length>=1000)continue;const b={id:uid(),active:true,...Object.fromEntries(B.map(k=>[k,String(r[k]||'')])),[FLAVOR]:snapshotFlavor(r)};if(beanOK(b)&&!items.some(x=>same(x,b)))items.push(b);}db.beanCatalog={version:1,items};}if(!catalogOK(db.beanCatalog))throw Error('Invalid bean catalog');bound=db;}return db.beanCatalog.items;}
+function normalizeBeanCatalog(data){
+ const raw=data&&data.beanCatalog;if(!raw||typeof raw!=='object'||Array.isArray(raw)){data.beanCatalog={version:1,items:[]};return data.beanCatalog;}
+ const seen=new Set(),items=[];
+ if(Array.isArray(raw.items))for(const b of raw.items){
+  if(items.length>=1000||!b||typeof b!=='object'||Array.isArray(b))continue;
+  const name=String(b.bean??'').trim().slice(0,5000);if(!name)continue;
+  let bid=typeof b.id==='string'?b.id.trim():'';if(!bid||bid.length>=160||seen.has(bid))bid=uid();
+  seen.add(bid);
+  const out={id:bid,active:typeof b.active==='boolean'?b.active:true};
+  for(const k of B)out[k]=String(b[k]??'').trim().slice(0,5000);
+  if(b[FLAVOR]!==undefined&&b[FLAVOR]!==null)out[FLAVOR]=String(b[FLAVOR]).trim().slice(0,3000);
+  if(beanOK(out))items.push(out);
+ }
+ data.beanCatalog={version:1,items};return data.beanCatalog;
+}
+let bound=null;function beans(){if(bound!==db){if(db.beanCatalog===undefined){const items=[];for(const r of [...db.recipes,...db.cups.map(c=>c.recipe)]){if(!r.bean||items.length>=1000)continue;const b={id:uid(),active:true,...Object.fromEntries(B.map(k=>[k,String(r[k]||'')])),[FLAVOR]:snapshotFlavor(r)};if(beanOK(b)&&!items.some(x=>same(x,b)))items.push(b);}db.beanCatalog={version:1,items};}else{const prev=JSON.stringify(db.beanCatalog);normalizeBeanCatalog(db);if(prev!==JSON.stringify(db.beanCatalog)&&typeof save==='function')try{save();}catch(e){}}if(!catalogOK(db.beanCatalog))throw Error('Invalid bean catalog');bound=db;}return db.beanCatalog.items;}
 try{beans();}catch(e){msg('Invalid bean catalog; back up existing data first.');return;}
-const oldMigrate=migrate;migrate=function(d){const n=oldMigrate(d);if(n.beanCatalog!==undefined&&!catalogOK(n.beanCatalog))throw Error('Invalid bean catalog');return n;};
+const oldMigrate=migrate;migrate=function(d){const n=oldMigrate(d);if(n.beanCatalog!==undefined){normalizeBeanCatalog(n);if(!catalogOK(n.beanCatalog))throw Error('Invalid bean catalog');}return n;};
 function stampBean(r,id){if(id==='__snapshot')return;const b=beans().find(x=>x.id===id);for(const k of B)r[k]=b?b[k]:k==='roast'?'未填':'';r[FLAVOR]=b?flavor(b):'';r.beanId=b?b.id:'';r.beanSnapshot=b?copy(b):null;}
 function beanSelect(s,r){s.replaceChildren();const empty=E('option',L('暫不指定','Not specified'));empty.value='';s.append(empty);let match=beans().find(b=>same(b,r));for(const b of beans().filter(b=>b.active||b===match)){const o=E('option',b.bean+(b.roastDate?' · '+b.roastDate:'')+(!b.active?L('（封存）',' (archived)'):''));o.value=b.id;s.append(o);}if(r.bean&&!match){const o=E('option',r.bean+L('（配方快照）',' (recipe snapshot)'));o.value='__snapshot';s.append(o);s.value='__snapshot';}else s.value=match?match.id:'';}
 function gearSelect(s,r,t){s.replaceChildren();const empty=E('option',L('暫不指定','Not specified'));empty.value='';s.append(empty);const items=db.equipment?.items||[],match=items.find(x=>x.type===t&&x.name===r[t]&&(t==='dripper'?x.shape===r.shape&&x.material===r.material:x.unit===(r.grindUnit||'')));for(const x of items.filter(x=>x.type===t&&(x.active||x===match))){const o=E('option',x.name);o.value=x.id;s.append(o);}if(r[t]&&!match){const o=E('option',r[t]+L('（配方快照）',' (recipe snapshot)'));o.value='__snapshot';s.append(o);s.value='__snapshot';}else s.value=match?match.id:'';}
