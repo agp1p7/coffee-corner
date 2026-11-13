@@ -1328,13 +1328,9 @@
         if (origCompare) origCompare.call(this, e);
         enhanceComparisonRadar();
       };
-      compareBtn._cvWrapped = true;
-      compareBtn.onclick = function (e) {
-        if (origCompare) origCompare.call(this, e);
-        enhanceComparisonRadar();
-      };
+      compareBtn._cvWrapped = true;      
     }
-
+    
     // 監聽延遲載入的外掛是否動態插入 #coffeeAppHeader、更改豆庫或更改語系
     let repairingHeader = false;
     const headerBar = document.getElementById('cvHeaderBar');
