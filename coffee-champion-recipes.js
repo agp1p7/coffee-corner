@@ -811,7 +811,11 @@
         align-items: center;
         justify-content: center;
         gap: 6px;
-        background: rgba(255, 255, 255, 0.08) !important;
+        background: #ffffff !important;
+        color: #111111 !important;
+        border: 1px solid #ffffff !important;
+        font-weight: 600 !important;
+      }
         border: 1px solid rgba(255, 255, 255, 0.28) !important;
         color: #ffffff !important;
         font-weight: 600;
