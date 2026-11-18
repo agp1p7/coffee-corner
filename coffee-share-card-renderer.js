@@ -23,7 +23,7 @@ const parameters=r.dose+' g '+L('粉','coffee')+' · '+x.water+' g '+L('萃取�
 put(parameters,96,story?1190:680,888,story?150:80,story?44:28,story?28:20);
 const additions=[[x.postCold,'後加冷水','Cold bypass'],[x.postRoom,'後加常溫水','Room-temperature bypass'],[x.postHot,'後加熱水','Hot bypass'],[x.postIce,'後加冰','Ice added']].filter(a=>a[0]>0).map(a=>L(a[1],a[2])+' '+a[0]+' g');
 if(additions.length)put(additions.join(' · '),96,story?1370:784,888,story?96:40,story?34:24,story?22:16);
-const extra=[];if(options.gear)extra.push([r.dripper,r.grinder,r.grind?L('刻度 ','Setting ')+r.grind+(r.grindUnit?' '+r.grindUnit:''):''].filter(Boolean).join(' · '));if(options.date){const d=new Date(c.date);if(Number.isFinite(d.getTime()))extra.push(d.toLocaleDateString(options.lang==='en'?'en':'zh-TW'));}
+const grindText=r.grind?L('刻度 ','Setting ')+r.grind+(r.grindUnit?' '+r.grindUnit:''):(r.grindGuide||r.grindGuideEn?L('推薦研磨 ','Recommended ')+L(r.grindGuide||r.grindGuideEn,r.grindGuideEn||r.grindGuide):'');const extra=[];if(options.gear)extra.push([r.dripper,r.grinder,grindText].filter(Boolean).join(' · '));if(options.date){const d=new Date(c.date);if(Number.isFinite(d.getTime()))extra.push(d.toLocaleDateString(options.lang==='en'?'en':'zh-TW'));}
 const note=options.note===undefined?String(c.taste||''):String(options.note);
 if(note.trim()){rule(story?1500:852);put(L('本杯風味筆記','This cup’s tasting notes'),96,story?1540:884,888,story?44:36,story?30:24,story?24:18);put(note.trim(),96,story?1616:936,888,story?(extra.length?160:220):(extra.length?32:76),story?36:26,story?22:16);}
 if(extra.length)put(extra.join(' · '),96,story?1810:984,888,story?78:28,story?28:20,story?18:14);
