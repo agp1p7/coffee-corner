@@ -26,7 +26,7 @@ jobs:
           html = page.read_text(encoding='utf-8')
           js = lang.read_text(encoding='utf-8')
           marker = '<script src="./coffee-equipment.js?v=1"></script>'
-          if marker not in html:
+          if './coffee-equipment.js' not in html:
               sha = subprocess.check_output(['git', 'hash-object', 'index.html'], text=True).strip()
               if sha != '12a98031e12e37f4971ea1010c511d6d2718c2f0' or html.count('</html>') != 1:
                   raise SystemExit('Homepage changed since review; no files modified.')

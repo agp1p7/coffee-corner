@@ -24,7 +24,7 @@ jobs:
           page, lang = Path('index.html'), Path('coffee-i18n.js')
           html, js = page.read_text(encoding='utf-8'), lang.read_text(encoding='utf-8')
           marker = '<script src="./coffee-brew-flow.js?v=1"></script>'
-          if marker not in html:
+          if './coffee-brew-flow.js' not in html:
               sha = subprocess.check_output(['git', 'hash-object', 'index.html'], text=True).strip()
               if sha != '8ed2f5cfd3ba1848ef5d93befd377ca26df445b3' or html.count('</html>') != 1:
                   raise SystemExit('Homepage changed since review; no files modified.')
