@@ -33,7 +33,7 @@ jobs:
           p = Path('index.html')
           text = p.read_text(encoding='utf-8')
           marker = '<script src="./recipe-draft-fix.js"></script>'
-          if marker not in text:
+          if './recipe-draft-fix.js' not in text:
               sha = subprocess.check_output(['git', 'hash-object', 'index.html'], text=True).strip()
               if sha != '7ae166fb06cc7e32db1e0da4f669e429a751acb3':
                   raise SystemExit('Homepage changed since review; stopping without editing index.html.')
