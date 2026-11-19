@@ -14,7 +14,9 @@ import {
   getFirestore,
   doc,
   collection,
+  getDoc,
   getDocs,
+  setDoc,
   writeBatch
 } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
 
@@ -841,3 +843,51 @@ if (typeof window !== 'undefined') {
     console.warn('[Sync] setItem hook skipped', e);
   }
 }
+
+// =========================================================================
+// 短網址配方快照服務（Firestore shared_recipes）
+// =========================================================================
+const SHORT_ALPHABET = '23456789abcdefghjkmnpqrstuvwxyz';
+function makeShortId(len = 8) {
+  const bytes = new Uint8Array(len);
+  crypto.getRandomValues(bytes);
+  let out = '';
+  for (let i = 0; i < len; i++) out += SHORT_ALPHABET[bytes[i] % SHORT_ALPHABET.length];
+  return out;
+}
+
+window.CoffeeShortShare = {
+  async create(pack) {
+    if (!pack || pack.format !== 'coffee-corner.recipe' || pack.version !== 1 || !pack.recipe) {
+      throw new Error('Invalid recipe package');
+    }
+    const serialized = JSON.stringify(pack);
+    if (new TextEncoder().encode(serialized).length > 262144) {
+      throw new Error('Recipe exceeds 256 KB');
+    }
+    const shortId = makeShortId(8);
+    await setDoc(doc(dbStore, 'shared_recipes', shortId), {
+      format: 'coffee-corner.recipe',
+      version: 1,
+      recipe: JSON.parse(JSON.stringify(pack.recipe)),
+      createdAt: Date.now()
+    });
+    return shortId;
+  },
+  async resolve(shortId) {
+    const id = String(shortId || '').trim();
+    if (!/^[A-Za-z0-9_-]{4,32}$/.test(id)) {
+      throw new Error('Invalid short link ID');
+    }
+    const snap = await getDoc(doc(dbStore, 'shared_recipes', id));
+    if (!snap.exists()) {
+      throw new Error('Shared recipe not found or expired');
+    }
+    const data = snap.data();
+    return {
+      format: data.format || 'coffee-corner.recipe',
+      version: data.version || 1,
+      recipe: data.recipe
+    };
+  }
+};
