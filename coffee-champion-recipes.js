@@ -1023,12 +1023,12 @@
       #openChampionLibraryGuide {
         display: flex;
         width: 100%;
-        margin: 10px 0 0 !important;
+        margin: 10px 0 16px !important;
       }
       #coffeeChampionDialog {
         box-sizing: border-box;
-        width: min(920px, calc(100vw - 24px)) !important;
-        max-width: calc(100vw - 24px) !important;
+        width: min(920px, calc(100% - 24px)) !important;
+        max-width: calc(100% - 24px) !important;
         max-height: 90vh;
         background: #0a0a0a !important;
         border: 1px solid rgba(255, 255, 255, 0.2) !important;

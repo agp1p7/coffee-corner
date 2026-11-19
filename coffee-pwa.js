@@ -19,7 +19,7 @@ refresh();if(document.readyState==='loading')document.addEventListener('DOMConte
 })();
 (function(){
 if(typeof document==='undefined'||document.getElementById('coffeeRecipeShareLoader'))return;
-const base=new URL('.',document.currentScript?document.currentScript.src:document.baseURI),script=document.createElement('script');script.id='coffeeRecipeShareLoader';script.src=new URL('coffee-recipe-share.js?v=4',base).href;script.defer=true;document.head.append(script);
+const base=new URL('.',document.currentScript?document.currentScript.src:document.baseURI),script=document.createElement('script');script.id='coffeeRecipeShareLoader';script.src=new URL('coffee-recipe-share.js?v=5',base).href;script.defer=true;document.head.append(script);
 })();
 (function(){
 if(typeof document==='undefined'||document.getElementById('coffeeHeaderSizeSheet'))return;
