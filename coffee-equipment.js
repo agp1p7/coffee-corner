@@ -49,7 +49,6 @@ for(const t of ['dripper','grinder']){
  select.onchange=()=>{choice[t]=select.value==='__snapshot'?choice[t]:copy(ensure().items.find(x=>x.id===select.value)||null);const x=choice[t];$(t).value=x?x.name:'';if(t==='dripper'){$('shape').value=x?x.shape:SH[4];$('material').value=x?x.material:MA[4];}else{legacy='';$('grind').value='';}syncDescription();const fn=$(t).oninput;if(fn)fn.call($(t),new Event('input',{bubbles:true}));};
 }
 for(const k of ['shape','material'])$(k).closest('label').hidden=true;
-const fieldsBox=$('fields');if(fieldsBox){const adv=E('details'),advSum=E('summary'),advGrid=E('div');adv.className='coffee-adv-fields';advSum.style.cssText='font-size:15px;margin:10px 0';advGrid.className='fields';labels.push([advSum,'進階參數（濾紙／水源／後加冷水與冰）','Advanced (filter / water / bypass & ice)']);adv.append(advSum,advGrid);for(const k of ['filter','waterSource','cold','ice']){const el=$(k),wrap=el&&el.closest('label');if(wrap)advGrid.append(wrap);}fieldsBox.after(adv);}
 const grind=$('grind'),grindNote=E('p');grindNote.className='hint';grindNote.setAttribute('data-coffee-user-text','true');grind.closest('label').append(grindNote);grind.type='number';grind.min='0';grind.step='any';grind.inputMode='decimal';grind.removeAttribute('max');grind.required=false;
 const grindInput=grind.oninput;grind.oninput=function(event){legacy='';syncDescription();if(grindInput)grindInput.call(this,event);};
 let guide={zh:'',en:''};

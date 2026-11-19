@@ -679,6 +679,201 @@
         { type: '等待／斷水', sec: 25, water: 0, note: '靜置 25–30 秒讓粉床穩定沉底' },
         { type: '下壓', sec: 30, water: 0, note: '溫柔穩定下壓約 30 秒至聽到嘶嘶氣音即停' }
       ]
+    },
+    {
+      id: 'lance-hedrick-121',
+      category: 'masters',
+      barista: 'Lance Hedrick',
+      baristaEn: 'Lance Hedrick',
+      title: '1-2-1 零失誤超長悶蒸兩段法',
+      titleEn: '1-2-1 Foolproof Long-Bloom 2-Pour V60',
+      name: 'Lance Hedrick｜1-2-1 兩段法',
+      badge: '新手高容錯神方',
+      badgeEn: 'Beginner-Friendly Classic',
+      method: '手沖',
+      dripper: 'HARIO V60 02',
+      shape: '錐形',
+      material: '樹脂／塑膠',
+      filter: 'V60 漂白濾紙',
+      roast: '淺焙',
+      dose: 15,
+      temp: 93,
+      waterSource: '軟水（50–80 ppm）',
+      grindGuide: '中偏粗研磨（C5 Pro 刻度 12.5–14）',
+      grindGuideEn: 'Medium-coarse (C5 Pro dial 12.5–14)',
+      summary: '只需悶蒸後一次主注水的新手神器：3 倍粉重悶蒸 2 分鐘充分排氣與預萃，接著高流速一氣呵成注至 250g，極低失誤率且乾淨高甜。',
+      summaryEn: 'Beginner-friendly single main pour: 3× dose bloom for 2 full minutes, followed by one steady high-flow pour to 250 g.',
+      notes: '【推薦研磨】中偏粗研磨（C5 Pro 刻度約 12.5–14）。只需 1 次悶蒸 ＋ 1 次主注水，悶蒸務必等滿 2 分鐘，總時間約 3:15–3:30 完成。',
+      steps: [
+        { type: '悶蒸注水', sec: 15, water: 45, note: '注入 3 倍粉重（45g）悶蒸水' },
+        { type: '攪拌', sec: 5, water: 0, note: '輕柔水平搖晃或輕撥粉層，確保無乾粉結塊' },
+        { type: '等待／斷水', sec: 100, water: 0, note: '【關鍵 2 分鐘長悶蒸】靜置至 2:00 充分排氣與均勻浸潤' },
+        { type: '繞圈注水', sec: 35, water: 205, note: '於 2:00 以穩定大流速繞圈一次注完至 250g，收尾輕搖濾杯整平' },
+        { type: '滴濾／等待完成', sec: 45, water: 0, note: '約 3:15–3:30 滴濾完成，甜感高且乾淨無雜味' }
+      ]
+    },
+    {
+      id: 'japanese-dark-roast-84',
+      category: 'masters',
+      barista: '日式傳統法蘭絨／KONO 流派',
+      baristaEn: 'Japanese Low-Temp Dark Roast Style',
+      title: '84°C 中深焙焦糖醇厚法（低苦高甜）',
+      titleEn: '84°C Silky Dark Roast Pour-Over',
+      name: '日式低溫｜中深焙焦糖醇厚法',
+      badge: '中深焙專用經典',
+      badgeEn: 'Dark Roast Classic',
+      method: '手沖',
+      dripper: 'HARIO V60 02',
+      shape: '錐形',
+      material: '陶瓷',
+      filter: 'V60 漂白濾紙',
+      roast: '中深焙',
+      dose: 20,
+      temp: 84,
+      waterSource: '中軟水（60–100 ppm）',
+      grindGuide: '中偏粗研磨（C5 Pro 刻度 13–14.5）',
+      grindGuideEn: 'Medium-coarse (C5 Pro dial 13–14.5)',
+      summary: '專為中深焙與深焙豆設計：84°C 低水溫 ＋ 1:13 醇厚粉水比 ＋ 中心小圈慢注，榨出黑巧克力與焦糖甜韻，徹底避開焦苦雜澀。',
+      summaryEn: 'Tailored for medium-dark & dark roasts: 84°C gentle center pours at 1:13 ratio highlight chocolate sweetness without bitterness.',
+      notes: '【推薦研磨】中偏粗研磨（C5 Pro 刻度約 13–14.5）。水溫控制在 83–85°C，注水維持中心小圈不沖杯壁，見白沫前即可提早移開濾杯。',
+      steps: [
+        { type: '悶蒸注水', sec: 35, water: 40, note: '84°C 柔和中心小圈注水 40g，讓新鮮深焙豆充分膨脹排氣' },
+        { type: '中心注水', sec: 45, water: 110, note: '細水柱中心小圈慢繞注水 110g（累計 150g），不碰觸濾紙邊緣' },
+        { type: '等待／斷水', sec: 15, water: 0, note: '稍降液位集中前中段醇厚甜感' },
+        { type: '中心注水', sec: 35, water: 110, note: '中心柔水注完 110g（累計 260g），見白沫前收手避免尾段焦苦' },
+        { type: '滴濾／等待完成', sec: 20, water: 0, note: '約 2:30 提早移開濾杯，展現絲滑黑巧克力與焦糖尾韻' }
+      ]
+    },
+    {
+      id: 'coffee-chronicler-switch',
+      category: 'hybrid',
+      barista: 'Coffee Chronicler',
+      baristaEn: 'Coffee Chronicler',
+      title: 'Switch 50/50 單溫雙段萬用神方',
+      titleEn: 'Switch 50/50 Single-Temp Hybrid',
+      name: 'Coffee Chronicler｜Switch 50/50 法',
+      badge: 'Switch 全球人氣首選',
+      badgeEn: 'Most Popular Switch',
+      method: '浸泡式',
+      dripper: 'HARIO Switch',
+      shape: '浸泡／閥門式',
+      material: '玻璃',
+      filter: 'V60 漂白濾紙',
+      roast: '淺焙',
+      dose: 20,
+      temp: 93,
+      waterSource: '軟水',
+      grindGuide: '中細偏中（C5 Pro 刻度 11.5–13）',
+      grindGuideEn: 'Medium-fine (C5 Pro dial 11.5–13)',
+      summary: '不用準備雙水溫就能兼顧手沖香氣與浸泡甜感：前半段 160g 開閥手沖、0:45 關閥注入後半段 160g 浸泡至 2:00 放流，簡單又極致穩定。',
+      summaryEn: 'Single-temp hybrid: pour first 50% (160 g) open, close valve at 0:45 and pour remaining 160 g to steep until 2:00.',
+      notes: '【推薦研磨】中細偏中（C5 Pro 刻度約 11.5–13）。免降溫、免複雜繞圈，適合各類淺中焙單品豆日常穩定出杯。',
+      steps: [
+        { type: '繞圈注水', sec: 25, water: 160, note: '【閥門開啟】直接以 93°C 穩定繞圈注入一半水量 160g' },
+        { type: '等待／斷水', sec: 20, water: 0, note: '【閥門保持開啟】滴濾至 0:45，建立乾淨花果酸香' },
+        { type: '開關閥門', sec: 5, water: 0, note: '【關閉閥門】於 0:45 關閉開關' },
+        { type: '繞圈注水', sec: 25, water: 160, note: '【閥門關閉】注入剩餘 160g（累計 320g）' },
+        { type: '等待／斷水', sec: 45, water: 0, note: '靜置浸泡至總時間 2:00，帶出飽滿甜度與醇厚口感' },
+        { type: '開關閥門', sec: 5, water: 0, note: '【開啟閥門】於 2:00 打開開關放流' },
+        { type: '滴濾／等待完成', sec: 55, water: 0, note: '約 2:55–3:00 滴濾完成，兼顧乾淨度與高甜度' }
+      ]
+    },
+    {
+      id: 'hoffmann-iced-v60',
+      category: 'iced',
+      barista: 'James Hoffmann',
+      baristaEn: 'James Hoffmann',
+      title: '40% 冰鎮 V60 日式冰手沖（單杯清爽版）',
+      titleEn: 'Iced Filter Coffee (40% Ice Flash Brew)',
+      name: 'James Hoffmann｜40% 冰鎮 V60',
+      badge: '經典冰手沖入門',
+      badgeEn: 'Classic Iced V60',
+      method: '手沖',
+      dripper: 'HARIO V60 01',
+      shape: '錐形',
+      material: '樹脂／塑膠',
+      filter: 'V60 漂白濾紙',
+      roast: '淺焙',
+      dose: 15,
+      temp: 95,
+      waterSource: '軟水 ＋ 實心冰塊 100g',
+      grindGuide: '細偏中細（C5 Pro 刻度 9.5–10.5）',
+      grindGuideEn: 'Fine-medium (C5 Pro dial 9.5–10.5)',
+      summary: '專為 15g 單人份設計的急冷冰手沖：150g 滾燙熱水一次慢繞萃取，滴落 100g 下壺冰塊瞬間急冷，清澈多汁、酸香明亮。',
+      summaryEn: '15 g single-cup flash brew: 150 g hot brew water onto 100 g server ice with bloom swirl and one continuous spiral pour.',
+      notes: '【推薦研磨】細偏中細（C5 Pro 刻度約 9.5–10.5）。下壺先放 100g 冰塊（佔總重 40%），熱萃完成後畫圓搖晃至冰塊融化冰鎮，再倒入裝冰的飲用杯。',
+      steps: [
+        { type: '悶蒸注水', sec: 15, water: 45, note: '【下壺先放 100g 冰塊】注水 45g 後輕搖濾杯讓咖啡粉完全浸濕' },
+        { type: '等待／斷水', sec: 30, water: 0, note: '靜置悶蒸至 0:45 充分排氣' },
+        { type: '繞圈注水', sec: 40, water: 105, note: '穩定慢速繞圈一次注完剩餘 105g（累計熱萃水 150g）' },
+        { type: '攪拌', sec: 5, water: 0, note: '輕柔水平搖晃濾杯 1–2 圈整平粉床' },
+        { type: '滴濾／等待完成', sec: 40, water: 0, note: '約 2:10 完成熱萃滴濾' },
+        { type: '後加冰塊', sec: 0, water: 100, note: '確認下壺 100g 急冷冰塊並搖晃分享壺至均勻冰鎮' }
+      ]
+    },
+    {
+      id: 'aeropress-espresso-base',
+      category: 'aeropress',
+      barista: '愛樂壓特調濃萃流派',
+      baristaEn: 'AeroPress Espresso-Style Concentrate',
+      title: '1:5 濃萃基底（冰美式／冰拿鐵萬用）',
+      titleEn: '1:5 Concentrated Base (Iced Americano / Latte)',
+      name: '愛樂壓｜冰美式・拿鐵濃萃基底',
+      badge: '特調濃萃必學',
+      badgeEn: 'Iced Latte / Americano Base',
+      method: '愛樂壓',
+      dripper: 'AeroPress',
+      shape: '其他／不適用',
+      material: '樹脂／塑膠',
+      filter: 'AeroPress 單層濾紙',
+      roast: '中深焙',
+      dose: 18,
+      temp: 90,
+      waterSource: '軟水（後段可換成鮮奶做拿鐵）',
+      grindGuide: '細研磨（C5 Pro 刻度 6–7.5）',
+      grindGuideEn: 'Fine (C5 Pro dial 6–7.5)',
+      summary: '家中沒有義式機也能做出醇厚冰拿鐵或冰美式：18g 細粉搭 90g 熱水 1:5 濃萃，後加冰水即成冰美式，換成 150ml 冰鮮奶秒變冰拿鐵！',
+      summaryEn: '18 g fine coffee with 90 g water (1:5 concentrate); dilute with cold water + ice for an iced Americano, or swap water for milk for an iced latte.',
+      notes: '【推薦研磨】細研磨（C5 Pro 刻度約 6–7.5）。後段 110g 冰水可依喜好改換成 150ml 鮮奶／燕麥奶製作拿鐵。',
+      steps: [
+        { type: '注水', sec: 15, water: 90, note: '【正壓或加裝控流蓋】以 90°C 熱水注入 90g（1:5 高濃度萃取）' },
+        { type: '攪拌', sec: 15, water: 0, note: '快速前後攪拌 15 秒充分釋放醇厚感與咖啡油脂' },
+        { type: '等待／斷水', sec: 45, water: 0, note: '輕插活塞防漏，靜置浸泡至 1:15' },
+        { type: '下壓', sec: 25, water: 0, note: '穩定慢速下壓 25 秒榨出濃郁咖啡液（約 65–70g）' },
+        { type: '後加水（bypass）', sec: 0, water: 110, waterKind: 'cold', note: '加入 110g 冰水做冰美式（做冰拿鐵時可改換成 150ml 冰鮮奶）' },
+        { type: '後加冰塊', sec: 0, water: 80, note: '加入 80g 冰塊拌勻即可享用' }
+      ]
+    },
+    {
+      id: 'vietnamese-phin-iced',
+      category: 'iced',
+      barista: '越式傳統滴濾流派（Cà Phê Sữa Đá）',
+      baristaEn: 'Traditional Vietnamese Phin (Cà Phê Sữa Đá)',
+      title: '越式滴濾壺 Phin｜傳統濃萃／煉乳冰咖啡',
+      titleEn: 'Traditional Vietnamese Phin Iced Coffee',
+      name: '越式滴濾壺 Phin｜煉乳冰咖啡',
+      badge: '越式經典滴濾',
+      badgeEn: 'Vietnamese Phin Classic',
+      method: '越南滴濾壺',
+      dripper: '越南滴濾壺 Phin',
+      shape: '平底',
+      material: '金屬',
+      filter: '金屬濾網',
+      roast: '深焙',
+      dose: 20,
+      temp: 94,
+      waterSource: '軟水（杯底可先加 20–30g 煉乳）',
+      grindGuide: '中細研磨（C5 Pro 刻度 9.5–11）',
+      grindGuideEn: 'Medium-fine (C5 Pro dial 9.5–11)',
+      summary: '完整支援越式滴濾壺 Phin：20g 深焙粉悶蒸後緩慢滴濾 4 分鐘萃出濃郁焦香咖啡液，搭配煉乳與滿杯冰塊，重現道地西貢街頭風味。',
+      summaryEn: 'Authentic slow-drip Phin recipe: 20 g dark roast with 90 g hot water over ~4 minutes, served over 120 g ice (with optional condensed milk).',
+      notes: '【推薦研磨】中細研磨（C5 Pro 刻度約 9.5–11）。壓片輕放即可勿重壓，理想流速為每秒 1–2 滴；杯底可先放入 20–30g 煉乳，滴完拌勻倒冰。',
+      steps: [
+        { type: '悶蒸注水', sec: 30, water: 20, note: '輕放金屬壓片（勿重壓），注入 20g 熱水悶蒸 30 秒讓粉層密合' },
+        { type: '注水', sec: 15, water: 70, note: '緩慢注滿剩餘 70g 熱水（累計 90g）並蓋上壺蓋保溫' },
+        { type: '滴濾／等待完成', sec: 240, water: 0, note: '維持每秒 1–2 滴慢速滴濾約 4 分鐘完成（杯底可預先加煉乳）' },
+        { type: '後加冰塊', sec: 0, water: 120, note: '移開滴濾壺、拌勻後倒入滿杯約 120g 冰塊即可享用' }
+      ]
     }
   ];
 
@@ -1071,6 +1266,8 @@
     const stepBoxCount = document.querySelectorAll('#steps > .box').length;
     const firstWater = Number(document.getElementById('sw0')?.value);
     const expectedFirstWater = r.steps[0] ? Number(r.steps[0].water) : NaN;
+    const tempEl = document.getElementById('temp');
+    const notesEl = document.getElementById('notes');
     if (
       nameInput &&
       recipesSel &&
@@ -1078,6 +1275,8 @@
       (
         nameInput.value !== r.name ||
         (doseEl && Number(doseEl.value) !== r.dose) ||
+        (tempEl && Number(tempEl.value) !== r.temp) ||
+        (notesEl && notesEl.value !== r.notes) ||
         stepBoxCount !== r.steps.length ||
         firstWater !== expectedFirstWater
       )
@@ -1129,25 +1328,26 @@
       if (typeof msg === 'function') msg(L('配方已達上限', 'Recipe limit reached'));
       return;
     }
-    const baseName = r.name;
+    const item = copy(r);
+    const baseName = item.name;
     let uniqueName = baseName;
     let idx = 2;
     while (db.recipes.some(x => x.name === uniqueName)) {
       uniqueName = `${baseName.slice(0, 280)}（${idx++}）`;
     }
-    r.name = uniqueName;
-    if (typeof vr === 'function' && !vr(r)) {
+    item.name = uniqueName;
+    if (typeof vr === 'function' && !vr(item)) {
       if (typeof msg === 'function') msg(L('配方格式驗證未通過', 'Recipe failed validation'));
       return;
     }
-    db.recipes.push(r);
-    if (typeof selected !== 'undefined') selected = r.id;
+    db.recipes.push(item);
+    if (typeof selected !== 'undefined') selected = item.id;
     const ok = typeof save === 'function' ? save() : true;
     if (typeof load === 'function') load();
     dialog.close();
     if (typeof msg === 'function') {
       msg(ok
-        ? L(`已存入我的配方：${r.name}`, `Saved to your recipes: ${r.name}`)
+        ? L(`已存入我的配方：${item.name}`, `Saved to your recipes: ${item.name}`)
         : L('目前僅暫存於記憶體，請備份', 'Saved in memory only; back up data'));
     }
   }

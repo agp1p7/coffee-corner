@@ -202,6 +202,13 @@ TDS需測量；成品重與TDS須屬同一份無未融冰、混合均勻的飲�
 依對話2.1功能重整，未在所有裝置實測。請測試儲存後重開、計時、重設復原及匯入匯出。回報附裝置、瀏覽器、步驟和截圖。末段到時停止，可設定較長再提前結束。暫停App不會停止咖啡萃取。沒有藍牙秤、雲端同步或豆量自動扣除。|Test build: check saving, reopening, timing, reset/undo and backups. Report device, browser, steps and screenshots. Timing stops after the final step; extend it if needed and finish early. Pausing the app does not stop extraction. No Bluetooth scale, cloud sync or automatic bean inventory.
 編輯配方|Edit recipe
 沖煮計時|Brew timer
+切換配方前請先儲存。|Save edits before switching recipes.
+步驟填寫說明|Step entry guide
+填每段新增水量。悶蒸算注水；兩次注水間有非加水步驟算一次斷水，末段滴濾不算。後加量不計入萃取水；手動步驟需確認完成。|Enter water added per step. Blooming counts as a pour. Non-pouring steps between pours count as one planned pause; final drawdown does not. Post additions are separate from brew water; confirm manual steps when done.
+重設不刪配方，8 秒內可復原；停注且之後還會注水時可記一次實際斷水。|Reset keeps your recipe (8 s undo). Log a pause when you stop pouring and will pour again.
+資料保存在此瀏覽器，建議定期匯出 JSON 備份；匯入 JSON 會覆蓋現有資料。|Data stays in this browser. Export a JSON backup regularly; importing JSON replaces existing data.
+關於與字型說明|About & font info
+全介面固定使用 Iansui 字型（由 Google Fonts 載入）。計時暫停不會停止咖啡萃取；背景或鎖屏可能延後提示音。|The UI uses the Iansui font via Google Fonts. Pausing the timer does not stop extraction; backgrounding or locking the screen may delay audio cues.
 風味紀錄|Tasting record`.split('\n').map(line=>line.split('|')));
 const scoreKeys=['acidity','sweetness','bitterness','body'];
 function tr(s){return D[s]||s;}

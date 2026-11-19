@@ -33,15 +33,16 @@ function assertValidRecipe(r) {
   assert.ok(sum.water > 0 && sum.water <= 10000);
 }
 
-test('includes 18 curated master & champion recipes', () => {
-  assert.equal(Champs.CHAMPIONS.length, 18);
+test('includes 24 curated master & champion recipes', () => {
+  assert.equal(Champs.CHAMPIONS.length, 24);
+  assert.equal(new Set(Champs.CHAMPIONS.map(c => c.id)).size, 24);
 });
 
-test('all 12 built recipes pass strict schema and CoffeeSteps validation', () => {
+test('all 24 built recipes pass strict schema and CoffeeSteps validation', () => {
   for (const tpl of Champs.CHAMPIONS) {
-    assert.ok(typeof tpl.grindGuide === 'string' && tpl.grindGuide.trim().length > 0, 'grindGuide present: ' + tpl.id);
-    assert.ok(typeof tpl.grindGuideEn === 'string' && tpl.grindGuideEn.trim().length > 0, 'grindGuideEn present: ' + tpl.id);
-    assert.ok(/研磨/.test(tpl.notes), 'notes include grind guidance: ' + tpl.id);
+    assert.ok(typeof tpl.grindGuide === 'string' && tpl.grindGuide.includes('C5 Pro') && !/C40/i.test(tpl.grindGuide), 'C5 Pro grindGuide present: ' + tpl.id);
+    assert.ok(typeof tpl.grindGuideEn === 'string' && tpl.grindGuideEn.includes('C5 Pro') && !/C40/i.test(tpl.grindGuideEn), 'C5 Pro grindGuideEn present: ' + tpl.id);
+    assert.ok(/研磨/.test(tpl.notes) && !/C40/i.test(tpl.notes), 'notes include C5 Pro grind guidance: ' + tpl.id);
     for (const lang of ['zh-Hant', 'en']) {
       const r = Champs.buildRecipeFromTemplate(tpl, { lang });
       assertValidRecipe(r);
@@ -67,7 +68,7 @@ test('all 9 Tetsu 4:6 taste & strength combinations pass validation and preserve
   }
 });
 
-test('all 12 recipes pass dose scaling for 12g, 15g, 18g, 20g, 25g', () => {
+test('all 24 recipes pass dose scaling for 12g, 15g, 18g, 20g, 25g', () => {
   for (const tpl of Champs.CHAMPIONS) {
     for (const targetDose of [12, 15, 18, 20, 25]) {
       const r = Champs.buildRecipeFromTemplate(tpl, { targetDose });
