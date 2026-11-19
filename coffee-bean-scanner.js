@@ -202,6 +202,13 @@
         en: 'Firebase AI Logic (Gemini Developer API) is not enabled in Firebase Console yet.'
       };
     }
+    if (low.includes('404') || low.includes('no longer available') || low.includes('not found for api version')) {
+      return {
+        code: 'MODEL_UNAVAILABLE',
+        zh: 'AI 辨識模型目前暫時無法使用，請稍後再試或聯絡更新。',
+        en: 'AI model is temporarily unavailable. Please try again later.'
+      };
+    }
     if (low.includes('network') || low.includes('failed to fetch') || low.includes('offline')) {
       return {
         code: 'OFFLINE',

@@ -904,7 +904,7 @@ const APP_CHECK_SITE_KEY = '6Leo5icuAAAAAPrsS5v7vhfsPk9CnJ_keRrZY2A7';
 const SCAN_COOLDOWN_MS = 4000;
 const SCAN_MAX_FILE_BYTES = 20 * 1024 * 1024;
 const SCAN_MAX_EDGE = 1024;
-const SCAN_MODELS = ['gemini-2.5-flash', 'gemini-2.5-flash-lite'];
+const SCAN_MODELS = ['gemini-3.5-flash-lite', 'gemini-3.5-flash'];
 
 async function ensureAppCheck() {
   if (!appCheckInitPromise) {
