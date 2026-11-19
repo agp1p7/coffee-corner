@@ -473,19 +473,19 @@
       filter: 'AeroPress 雙層濾紙',
       roast: '淺焙',
       dose: 18,
-      temp: 84,
+      temp: 86,
       waterSource: '低礦物質軟水',
-      grindGuide: '中偏粗研磨（C5 Pro 刻度 12.5–14）',
-      grindGuideEn: 'Medium-coarse (C5 Pro dial 12.5–14)',
-      summary: '近年 WAC 世界愛樂壓大賽屢屢奪冠的核心思路：84°C 低水溫 ＋ 僅用 100g 濃萃，再透過後加 120g 熱水（Bypass）稀釋，將雜澀鎖在粉餅中只留純淨焦糖甜。',
-      summaryEn: 'Classic WAC winning formula: brew concentrated with 100 g at 84°C, gently press, then bypass with 120 g hot water for unmatched sweetness.',
-      notes: '【推薦研磨】中偏粗研磨（C5 Pro 刻度約 12.5–14）。【推薦設定】反壓法（Inverted）或搭配防滴控流蓋，雙層濾紙浸濕；18g 粉 ＋ 84°C 水溫 100g，押出約 75g 濃縮後再 Bypass 兌水至理想濃度。',
+      grindGuide: '中細偏中（C5 Pro 刻度 9–10.5）',
+      grindGuideEn: 'Medium-fine (C5 Pro dial 9–10.5)',
+      summary: '近年 WAC 世界愛樂壓大賽屢屢奪冠的核心思路：86°C 低水溫 ＋ 僅用 100g 濃萃至 1:30，再透過後加 60g 熱水（Bypass）精準稀釋，口感飽滿甜美不水薄。',
+      summaryEn: 'Classic WAC winning formula: brew concentrated with 100 g at 86°C until 1:30, gently press, then bypass with 60 g hot water for rich, syrupy sweetness.',
+      notes: '【推薦研磨】中細偏中（C5 Pro 刻度約 9–10.5）。【推薦設定】反壓法（Inverted）或搭配防滴控流蓋，雙層濾紙浸濕；18g 粉 ＋ 86°C 水溫 100g 浸泡至 1:30，押出約 70g 濃萃後加入約 50–70g Bypass 熱水（邊加邊試濃淡）。',
       steps: [
-        { type: '注水', sec: 15, water: 100, note: '【反壓法或加裝控流蓋】以 84°C 溫水快速注入 100g' },
+        { type: '注水', sec: 15, water: 100, note: '【反壓法或加裝控流蓋】以 86°C 溫水快速注入 100g' },
         { type: '攪拌', sec: 15, water: 0, note: '以攪拌棒前後輕柔攪拌 10–15 下，使粉水均勻接觸' },
-        { type: '等待／斷水', sec: 45, water: 0, note: '鎖緊雙層濕潤濾紙與濾蓋，靜置浸泡至 1:15' },
+        { type: '等待／斷水', sec: 60, water: 0, note: '鎖緊雙層濕潤濾紙與濾蓋，靜置浸泡至 1:30' },
         { type: '下壓', sec: 30, water: 0, note: '翻轉至分享壺上，穩定慢速下壓 30 秒至聽到氣音即停' },
-        { type: '後加水（bypass）', sec: 0, water: 120, waterKind: 'hot', note: '【冠軍 Bypass 手法】於濃縮咖啡液中加入 120g 熱水（或溫水）稀釋，呈現乾淨爆棚甜感' }
+        { type: '後加水（bypass）', sec: 0, water: 60, waterKind: 'hot', note: '【冠軍 Bypass 手法】於濃縮咖啡液中加入約 60g 熱水（可於 50–70g 間依個人濃淡喜好微調）' }
       ]
     },
     {
