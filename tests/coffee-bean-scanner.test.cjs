@@ -73,6 +73,7 @@ test('classifyScanError returns user-friendly zh/en messages for key failure mod
   assert.equal(scanner.classifyScanError(new Error('429 RESOURCE_EXHAUSTED')).code, 'QUOTA_EXCEEDED');
   assert.equal(scanner.classifyScanError(new Error('403 Firebase AI Logic API has not been used in project')).code, 'API_DISABLED');
   assert.equal(scanner.classifyScanError(new Error('App-Check token invalid')).code, 'APP_CHECK_FAILED');
+  assert.equal(scanner.classifyScanError(new Error('appCheck/recaptcha-error')).code, 'APP_CHECK_FAILED');
   assert.equal(scanner.classifyScanError(new Error('TypeError: Failed to fetch')).code, 'OFFLINE');
   assert.equal(scanner.classifyScanError(new Error('something unexpected')).code, 'UNKNOWN');
 });

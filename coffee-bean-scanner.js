@@ -180,7 +180,7 @@
         en: 'Daily free AI quota reached. Please try again later or fill manually.'
       };
     }
-    if (low.includes('app-check') || low.includes('appcheck') || low.includes('attestation')) {
+    if (low.includes('app-check') || low.includes('appcheck') || low.includes('attestation') || low.includes('recaptcha')) {
       return {
         code: 'APP_CHECK_FAILED',
         zh: 'App Check 驗證未通過，請重新整理網頁或確認網域設定。',

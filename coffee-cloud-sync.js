@@ -940,7 +940,11 @@ async function loadFirebaseAI() {
 
 function compressImageFile(file) {
   return new Promise((resolve, reject) => {
-    if (!file || typeof file.type !== 'string' || !file.type.startsWith('image/')) {
+    const hasImageMime = file && typeof file.type === 'string' && file.type.startsWith('image/');
+    const hasImageExt = file && (!file.type || file.type === 'application/octet-stream') &&
+      typeof file.name === 'string' &&
+      /\.(jpe?g|png|webp|gif|heic|heif|bmp|avif)$/i.test(file.name);
+    if (!file || (!hasImageMime && !hasImageExt)) {
       const err = new Error('IMAGE_INVALID');
       err.code = 'IMAGE_INVALID';
       reject(err);
@@ -1016,7 +1020,6 @@ window.CoffeeBeanScanner = {
     if (!utils) throw new Error('Scanner utils not loaded');
 
     const { base64, mimeType, previewDataUrl } = await compressImageFile(file);
-    lastScanAt = Date.now();
 
     const { mod, ai } = await loadFirebaseAI();
     const { getGenerativeModel, Schema } = mod;
@@ -1058,21 +1061,28 @@ window.CoffeeBeanScanner = {
           ? result.response.text()
           : '';
         const beanData = utils.parseScannerJson(text);
+        lastScanAt = Date.now();
         return { beanData, modelUsed: modelName, previewDataUrl };
       } catch (err) {
         lastErr = err;
         const msgStr = String(err && (err.message || err.code) || '').toLowerCase();
+        if (msgStr.includes('429') || msgStr.includes('resource_exhausted') || msgStr.includes('quota')) {
+          lastScanAt = Date.now();
+        }
         // If API is disabled or auth/app-check failed, no need to retry secondary model
         if (
           msgStr.includes('not enabled') ||
           msgStr.includes('permission_denied') ||
           msgStr.includes('app-check') ||
+          msgStr.includes('recaptcha') ||
           msgStr.includes('403')
         ) {
+          console.error('[BeanScanner]', err);
           throw err;
         }
       }
     }
+    if (lastErr) console.error('[BeanScanner]', lastErr);
     throw lastErr || new Error('SCAN_FAILED');
   }
 };

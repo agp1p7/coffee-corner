@@ -66,9 +66,6 @@ const beanDialog=modal();function editBean(item=null,after=null,opts=null){
  scanHint.className='hint bean-scan-hint';
  const form=E('form'),controls={};
  let scanning=false;
- const camBtn=button(scanActions,'📷 拍豆袋辨識','📷 Snap bag',()=>{if(!scanning)camInput.click();});
- const pickBtn=button(scanActions,'🖼️ 選豆袋照片','🖼️ Choose photo',()=>{if(!scanning)fileInput.click();});
- camBtn.className='bean-scan-btn';pickBtn.className='bean-scan-btn';
  function showLoginAction(){
   scanStatus.replaceChildren(document.createTextNode(L('請先登入 Google 帳號才能使用拍豆袋辨識：','Sign in with Google first to scan coffee bags: ')));
   const loginBtn=E('button',L('立即登入 Google','Sign in with Google'));loginBtn.type='button';loginBtn.className='bean-scan-login';
@@ -81,23 +78,31 @@ const beanDialog=modal();function editBean(item=null,after=null,opts=null){
   };
   scanStatus.append(loginBtn);
  }
- async function handleScanFile(file){
-  if(!file||scanning)return;
-  const scanner=window.CoffeeBeanScanner,utils=window.CoffeeBeanScannerUtils;
+ function ensureScannerReady(){
+  const scanner=window.CoffeeBeanScanner;
   if(!scanner||typeof scanner.scanFile!=='function'){
    scanStatus.classList.remove('is-ok');scanStatus.classList.add('is-error');
    scanStatus.textContent=L('AI 辨識模組尚未載入完成，請稍候或重新整理頁面。','AI scanner module is not ready yet. Please wait or reload.');
-   return;
+   return false;
   }
   if(typeof scanner.isSignedIn==='function'&&!scanner.isSignedIn()){
    scanStatus.classList.remove('is-ok');scanStatus.classList.add('is-error');
    showLoginAction();
-   return;
+   return false;
   }
-  scanning=true;camBtn.disabled=pickBtn.disabled=true;
-  scanStatus.classList.remove('is-ok','is-error');
-  scanStatus.textContent=L('⏳ AI 正在辨識豆袋標籤，請稍候…','⏳ Reading coffee bag label…');
+  return true;
+ }
+ const camBtn=button(scanActions,'📷 拍豆袋辨識','📷 Snap bag',()=>{if(!scanning&&ensureScannerReady())camInput.click();});
+ const pickBtn=button(scanActions,'🖼️ 選豆袋照片','🖼️ Choose photo',()=>{if(!scanning&&ensureScannerReady())fileInput.click();});
+ camBtn.className='bean-scan-btn';pickBtn.className='bean-scan-btn';
+ async function handleScanFile(file){
+  if(!file||scanning)return;
   try{
+   if(!ensureScannerReady())return;
+   const scanner=window.CoffeeBeanScanner;
+   scanning=true;camBtn.disabled=pickBtn.disabled=true;
+   scanStatus.classList.remove('is-ok','is-error');
+   scanStatus.textContent=L('⏳ AI 正在辨識豆袋標籤，請稍候…','⏳ Reading coffee bag label…');
    const res=await scanner.scanFile(file,{lang:document.documentElement.lang});
    if(res.previewDataUrl){scanPreview.src=res.previewDataUrl;scanPreview.hidden=false;}
    const d=res.beanData||{};
@@ -117,6 +122,7 @@ const beanDialog=modal();function editBean(item=null,after=null,opts=null){
    }
   }catch(err){
    scanStatus.classList.remove('is-ok');scanStatus.classList.add('is-error');
+   const utils=window.CoffeeBeanScannerUtils;
    const info=utils&&typeof utils.classifyScanError==='function'?utils.classifyScanError(err):{code:'UNKNOWN',zh:'辨識失敗，請稍後再試。',en:'Scan failed. Please try again.'};
    if(info.code==='NOT_SIGNED_IN')showLoginAction();
    else scanStatus.textContent=L(info.zh,info.en);
@@ -138,7 +144,13 @@ const beanDialog=modal();function editBean(item=null,after=null,opts=null){
  button(beanDialog,'取消','Cancel',()=>beanDialog.close());
  form.onsubmit=e=>{e.preventDefault();if(!form.reportValidity())return;const b={id:item?item.id:uid(),active:item?item.active:true,...Object.fromEntries(B.map(k=>[k,controls[k].value.trim()])),[FLAVOR]:controls[FLAVOR].value.trim()};if(!beanOK(b)||!item&&beans().length>=1000){msg(L('請確認豆名與資料數量','Check the coffee name and catalog limit'));return;}const list=beans(),i=list.findIndex(x=>x.id===b.id);const previous=i<0?null:list[i];if(i<0)list.push(b);else list[i]=b;if(!save()){if(i<0)list.splice(list.indexOf(b),1);else list[i]=previous;msg(L('未能儲存咖啡豆，原資料保留；請先備份並檢查儲存狀態。','Could not save the coffee. Original data was kept; back up and check storage.'));return;}if(after)after(b);beanDialog.close();refresh();};
  beanDialog.showModal();
- if(opts&&opts.focusScan){camBtn.focus();}
+ if(opts&&opts.focusScan){
+  if(window.CoffeeBeanScanner&&typeof window.CoffeeBeanScanner.isSignedIn==='function'&&!window.CoffeeBeanScanner.isSignedIn()){
+   scanStatus.classList.remove('is-ok');scanStatus.classList.add('is-error');
+   showLoginAction();
+  }
+  camBtn.focus();
+ }
 }
 function refresh(){const items=beans();beanPanel.replaceChildren();prune();button(beanPanel,'＋新增咖啡豆','＋ Add coffee',()=>editBean());button(beanPanel,'📷 拍豆袋新增','📷 Scan coffee bag',()=>editBean(null,null,{focusScan:true}));if(!items.length)beanPanel.append(text(E('p'),'先新增咖啡豆，沖煮時就能直接選取。','Add a coffee to select it when brewing.'));for(const b of items){const box=E('article');box.className='box';box.append(E('h3',b.bean),E('p',[b.roaster,b.roast,b.roastDate,!b.active?L('已封存','Archived'):''].filter(Boolean).join(' · ')));if(flavor(b))box.append(E('p',flavor(b)));button(box,'編輯','Edit',()=>editBean(b));button(box,b.active?'封存':'啟用',b.active?'Archive':'Activate',()=>{b.active=!b.active;save();refresh();});beanPanel.append(box);}gearList.replaceChildren();for(const x of db.equipment?.items||[]){const box=E('article');box.className='box';box.append(E('h3',x.name),E('p',[x.type==='dripper'?L('沖煮器具','Brewer'):L('磨豆機','Grinder'),x.unit,x.active?'':L('已停用','Inactive')].filter(Boolean).join(' · ')));gearList.append(box);}refreshPickers();}
 const oldRead=read,oldFill=fill,initialBeanRecipe=db.recipes.find(r=>r.id===selected)||db.recipes[0];let beanChoice=initialBeanRecipe.beanSnapshot||null,recipeBeanFlavor=pinnedFlavor(initialBeanRecipe);
