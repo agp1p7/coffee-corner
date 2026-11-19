@@ -2,14 +2,15 @@
 // 跨裝置雲端同步模組（一隅・咖啡角 v2）
 // 特色：Local-First、首登防護性本機備份、內容雜湊 + updatedAt 衝突比對、軟刪除墓碑（不復活已刪資料）、大批量分批上傳
 
-import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
+const FIREBASE_SDK_VER = '11.10.0';
+import { initializeApp } from 'https://www.gstatic.com/firebasejs/11.10.0/firebase-app.js';
 import {
   getAuth,
   signInWithPopup,
   GoogleAuthProvider,
   signOut,
   onAuthStateChanged
-} from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
+} from 'https://www.gstatic.com/firebasejs/11.10.0/firebase-auth.js';
 import {
   getFirestore,
   doc,
@@ -18,7 +19,7 @@ import {
   getDocs,
   setDoc,
   writeBatch
-} from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
+} from 'https://www.gstatic.com/firebasejs/11.10.0/firebase-firestore.js';
 
 const firebaseConfig = {
   apiKey: "AIzaSyCYZKHQrqLGExQGDUf8d3pknW46TeGNGOY",
@@ -889,5 +890,169 @@ window.CoffeeShortShare = {
       version: data.version || 1,
       recipe: data.recipe
     };
+  }
+};
+
+// =========================================================================
+// 拍咖啡豆袋 AI 辨識服務（Firebase AI Logic · Gemini Developer API 免費額度）
+// =========================================================================
+let aiModulePromise = null;
+let aiInstance = null;
+let lastScanAt = 0;
+const SCAN_COOLDOWN_MS = 4000;
+const SCAN_MAX_FILE_BYTES = 20 * 1024 * 1024;
+const SCAN_MAX_EDGE = 1024;
+const SCAN_MODELS = ['gemini-2.5-flash', 'gemini-2.5-flash-lite'];
+
+async function loadFirebaseAI() {
+  if (!aiModulePromise) {
+    aiModulePromise = import(`https://www.gstatic.com/firebasejs/${FIREBASE_SDK_VER}/firebase-ai.js`).catch((err) => {
+      aiModulePromise = null;
+      throw err;
+    });
+  }
+  const mod = await aiModulePromise;
+  if (!aiInstance) {
+    aiInstance = mod.getAI(app, { backend: new mod.GoogleAIBackend() });
+  }
+  return { mod, ai: aiInstance };
+}
+
+function compressImageFile(file) {
+  return new Promise((resolve, reject) => {
+    if (!file || typeof file.type !== 'string' || !file.type.startsWith('image/')) {
+      const err = new Error('IMAGE_INVALID');
+      err.code = 'IMAGE_INVALID';
+      reject(err);
+      return;
+    }
+    if (file.size > SCAN_MAX_FILE_BYTES) {
+      const err = new Error('IMAGE_INVALID');
+      err.code = 'IMAGE_INVALID';
+      reject(err);
+      return;
+    }
+    const objUrl = URL.createObjectURL(file);
+    const img = new Image();
+    img.onload = () => {
+      try {
+        let w = img.naturalWidth || img.width;
+        let h = img.naturalHeight || img.height;
+        if (!w || !h) throw new Error('IMAGE_INVALID');
+        const scale = Math.min(1, SCAN_MAX_EDGE / Math.max(w, h));
+        const tw = Math.max(1, Math.round(w * scale));
+        const th = Math.max(1, Math.round(h * scale));
+        const canvas = document.createElement('canvas');
+        canvas.width = tw;
+        canvas.height = th;
+        const ctx = canvas.getContext('2d');
+        if (!ctx) throw new Error('Canvas unavailable');
+        ctx.fillStyle = '#000000';
+        ctx.fillRect(0, 0, tw, th);
+        ctx.drawImage(img, 0, 0, tw, th);
+        const dataUrl = canvas.toDataURL('image/jpeg', 0.82);
+        const base64 = dataUrl.split(',')[1] || '';
+        if (!base64) throw new Error('IMAGE_INVALID');
+        resolve({ base64, mimeType: 'image/jpeg', previewDataUrl: dataUrl });
+      } catch (e) {
+        if (!e.code) e.code = 'IMAGE_INVALID';
+        reject(e);
+      } finally {
+        URL.revokeObjectURL(objUrl);
+      }
+    };
+    img.onerror = () => {
+      URL.revokeObjectURL(objUrl);
+      const err = new Error('IMAGE_INVALID');
+      err.code = 'IMAGE_INVALID';
+      reject(err);
+    };
+    img.src = objUrl;
+  });
+}
+
+window.CoffeeBeanScanner = {
+  isSignedIn() {
+    return !!auth.currentUser;
+  },
+  async signIn() {
+    if (auth.currentUser) return auth.currentUser;
+    const res = await signInWithPopup(auth, provider);
+    return res.user;
+  },
+  async scanFile(file, opts = {}) {
+    if (!auth.currentUser) {
+      const err = new Error('NOT_SIGNED_IN');
+      err.code = 'NOT_SIGNED_IN';
+      throw err;
+    }
+    const now = Date.now();
+    if (now - lastScanAt < SCAN_COOLDOWN_MS) {
+      const err = new Error('COOLDOWN');
+      err.code = 'COOLDOWN';
+      throw err;
+    }
+    const utils = window.CoffeeBeanScannerUtils;
+    if (!utils) throw new Error('Scanner utils not loaded');
+
+    const { base64, mimeType, previewDataUrl } = await compressImageFile(file);
+    lastScanAt = Date.now();
+
+    const { mod, ai } = await loadFirebaseAI();
+    const { getGenerativeModel, Schema } = mod;
+
+    const responseSchema = Schema.object({
+      properties: {
+        bean: Schema.string({ description: 'Coffee name' }),
+        roaster: Schema.string({ description: 'Roaster or brand name' }),
+        origin: Schema.string({ description: 'Country, region, or farm' }),
+        process: Schema.string({ description: 'Processing method' }),
+        roast: Schema.enumString({
+          enum: utils.ROAST_LEVELS,
+          description: 'Roast level'
+        }),
+        roastDate: Schema.string({ description: 'Roast date YYYY-MM-DD or empty string' }),
+        beanFlavor: Schema.string({ description: 'Tasting notes / flavor descriptors' })
+      }
+    });
+
+    const prompt = utils.buildScanPrompt(opts.lang || document.documentElement.lang);
+    const parts = [
+      prompt,
+      { inlineData: { mimeType, data: base64 } }
+    ];
+
+    let lastErr = null;
+    for (const modelName of SCAN_MODELS) {
+      try {
+        const model = getGenerativeModel(ai, {
+          model: modelName,
+          generationConfig: {
+            responseMimeType: 'application/json',
+            responseSchema,
+            temperature: 0.1
+          }
+        });
+        const result = await model.generateContent(parts);
+        const text = result && result.response && typeof result.response.text === 'function'
+          ? result.response.text()
+          : '';
+        const beanData = utils.parseScannerJson(text);
+        return { beanData, modelUsed: modelName, previewDataUrl };
+      } catch (err) {
+        lastErr = err;
+        const msgStr = String(err && (err.message || err.code) || '').toLowerCase();
+        // If API is disabled or auth/app-check failed, no need to retry secondary model
+        if (
+          msgStr.includes('not enabled') ||
+          msgStr.includes('permission_denied') ||
+          msgStr.includes('app-check') ||
+          msgStr.includes('403')
+        ) {
+          throw err;
+        }
+      }
+    }
+    throw lastErr || new Error('SCAN_FAILED');
   }
 };
