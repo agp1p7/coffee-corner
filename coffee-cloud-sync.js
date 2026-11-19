@@ -898,13 +898,33 @@ window.CoffeeShortShare = {
 // =========================================================================
 let aiModulePromise = null;
 let aiInstance = null;
+let appCheckInitPromise = null;
 let lastScanAt = 0;
+const APP_CHECK_SITE_KEY = '6Leo5icuAAAAAPrsS5v7vhfsPk9CnJ_keRrZY2A7';
 const SCAN_COOLDOWN_MS = 4000;
 const SCAN_MAX_FILE_BYTES = 20 * 1024 * 1024;
 const SCAN_MAX_EDGE = 1024;
 const SCAN_MODELS = ['gemini-2.5-flash', 'gemini-2.5-flash-lite'];
 
+async function ensureAppCheck() {
+  if (!appCheckInitPromise) {
+    appCheckInitPromise = import(`https://www.gstatic.com/firebasejs/${FIREBASE_SDK_VER}/firebase-app-check.js`)
+      .then((acMod) => {
+        return acMod.initializeAppCheck(app, {
+          provider: new acMod.ReCaptchaEnterpriseProvider(APP_CHECK_SITE_KEY),
+          isTokenAutoRefreshEnabled: true
+        });
+      })
+      .catch((err) => {
+        appCheckInitPromise = null;
+        throw err;
+      });
+  }
+  return appCheckInitPromise;
+}
+
 async function loadFirebaseAI() {
+  await ensureAppCheck();
   if (!aiModulePromise) {
     aiModulePromise = import(`https://www.gstatic.com/firebasejs/${FIREBASE_SDK_VER}/firebase-ai.js`).catch((err) => {
       aiModulePromise = null;
