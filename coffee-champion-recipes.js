@@ -1273,11 +1273,128 @@
         margin: 0 !important;
         font-size: 13.5px !important;
       }
+      .champ-card-clickable {
+        cursor: pointer;
+        transition: border-color 0.16s ease, background 0.16s ease, transform 0.12s ease;
+      }
+      .champ-card-clickable:hover,
+      .champ-card-clickable:focus-visible {
+        border-color: rgba(255, 255, 255, 0.5) !important;
+        background: #1b1b1b;
+        outline: none;
+      }
+      .champ-desc-clamp {
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+      }
+      .champ-card-cue {
+        margin-top: auto;
+        padding-top: 4px;
+        font-size: 13px;
+        font-weight: 600;
+        color: #ffffff;
+        text-align: right;
+      }
+      .champ-detail {
+        display: grid;
+        gap: 14px;
+      }
+      .champ-detail-nav {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+        padding-bottom: 10px;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+      }
+      .champ-detail-nav button {
+        margin: 0 !important;
+        min-height: 38px !important;
+        padding: 6px 12px !important;
+        font-size: 13.5px !important;
+      }
+      .champ-metrics {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 8px;
+      }
+      .champ-metric {
+        background: #161616;
+        border: 1px solid rgba(255, 255, 255, 0.12);
+        border-radius: 12px;
+        padding: 10px 8px;
+        text-align: center;
+      }
+      .champ-metric span {
+        display: block;
+        font-size: 12px;
+        color: #a1a1aa;
+      }
+      .champ-metric strong {
+        display: block;
+        margin-top: 4px;
+        font-size: 18px;
+        font-family: 'JetBrains Mono', monospace;
+        color: #ffffff;
+      }
+      @media (max-width: 520px) {
+        .champ-metrics {
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+      }
+      .champ-detail-box {
+        background: #141414;
+        border: 1px solid rgba(255, 255, 255, 0.12);
+        border-radius: 14px;
+        padding: 12px 14px;
+      }
+      .champ-detail-box h4 {
+        margin: 0 0 8px;
+        font-size: 14.5px;
+        color: #ffffff;
+      }
+      .champ-detail-steps {
+        margin: 0;
+        padding: 0;
+        list-style: none;
+        display: grid;
+        gap: 8px;
+      }
+      .champ-detail-step {
+        background: #1a1a1a;
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        border-radius: 10px;
+        padding: 10px 12px;
+        font-size: 13.5px;
+        line-height: 1.55;
+      }
+      .champ-detail-step-head {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: space-between;
+        gap: 6px;
+        font-weight: 600;
+        color: #ffffff;
+        margin-bottom: 3px;
+      }
+      .champ-detail-step-time {
+        font-family: 'JetBrains Mono', monospace;
+        font-size: 12.5px;
+        color: #a1a1aa;
+      }
+      .champ-detail-step-note {
+        color: #d4d4d8;
+        font-size: 13px;
+      }
     `;
     document.head.append(style);
   }
 
   let activeCategory = 'all';
+  let activeRecipeId = null;
+  let listScrollTop = 0;
   let targetDose = null;
   let tetsuTaste = 'balance';
   let tetsuStrength = 'standard';
@@ -1413,20 +1530,274 @@
     return `${m}:${String(rem).padStart(2, '0')}`;
   }
 
+  function renderDetailView(tpl, en) {
+    const built = buildRecipeFromTemplate(tpl, {
+      lang: en ? 'en' : 'zh-Hant',
+      targetDose,
+      tasteMode: tetsuTaste,
+      strengthMode: tetsuStrength
+    });
+    const sums = recipeSums(built);
+    const isScaled = Math.abs(built.dose - tpl.dose) > 1e-6;
+    const ratio = built.dose > 0 ? (sums.brewWater / built.dose).toFixed(1) : '—';
+
+    const wrap = document.createElement('div');
+    wrap.className = 'champ-detail';
+
+    // Top Nav: Back to List + Close
+    const nav = document.createElement('div');
+    nav.className = 'champ-detail-nav';
+    const backBtn = document.createElement('button');
+    backBtn.type = 'button';
+    backBtn.textContent = en ? '← Back to recipes' : '← 返回配方清單';
+    backBtn.onclick = () => {
+      activeRecipeId = null;
+      targetDose = null;
+      renderDialogContent();
+      dialog.scrollTop = listScrollTop;
+    };
+    const closeBtn = document.createElement('button');
+    closeBtn.type = 'button';
+    closeBtn.textContent = en ? 'Close ✕' : '關閉 ✕';
+    closeBtn.onclick = () => dialog.close();
+    nav.append(backBtn, closeBtn);
+    wrap.append(nav);
+
+    // Header: Badge + Barista + Title + Summary
+    const top = document.createElement('div');
+    top.className = 'champ-card-top';
+    top.innerHTML = `
+      <span class="champ-badge">${esc(en ? tpl.badgeEn : tpl.badge)}</span>
+      <span class="champ-barista">${esc(en ? tpl.baristaEn : tpl.barista)}</span>
+    `;
+    const h2 = document.createElement('h2');
+    h2.style.margin = '0';
+    h2.style.fontSize = '1.3rem';
+    h2.textContent = en ? tpl.titleEn : tpl.title;
+    const summaryP = document.createElement('p');
+    summaryP.className = 'champ-desc';
+    summaryP.textContent = en ? tpl.summaryEn : tpl.summary;
+    wrap.append(top, h2, summaryP);
+
+    // 4-tile Core Metrics Grid
+    const metrics = document.createElement('div');
+    metrics.className = 'champ-metrics';
+    for (const [k, v] of [
+      [en ? 'Coffee' : '粉量', `${built.dose} g`],
+      [en ? `Water (1:${ratio})` : `萃取水 (1:${ratio})`, `${sums.brewWater} g`],
+      [en ? 'Temp' : '水溫', `${built.temp}°C`],
+      [en ? 'Time' : '預計時間', fmtSec(sums.totalSec)]
+    ]) {
+      const box = document.createElement('div');
+      box.className = 'champ-metric';
+      box.innerHTML = `<span>${esc(k)}</span><strong>${esc(v)}</strong>`;
+      metrics.append(box);
+    }
+    wrap.append(metrics);
+
+    // Gear & Grind Card
+    const gearBox = document.createElement('div');
+    gearBox.className = 'champ-detail-box';
+    const gearChips = [
+      `<span class="champ-chip">${esc(built.dripper)}</span>`,
+      built.filter ? `<span class="champ-chip">${esc(built.filter)}</span>` : '',
+      built.roast && built.roast !== '未填' ? `<span class="champ-chip">${esc(built.roast)}</span>` : '',
+      `<span class="champ-chip scaled">${esc(en ? tpl.grindGuideEn : tpl.grindGuide)}</span>`
+    ].filter(Boolean);
+    if (sums.postIce > 0) gearChips.push(`<span class="champ-chip scaled">+${sums.postIce}g ${en ? 'Ice' : '冰塊'}</span>`);
+    if (sums.postWater > 0) gearChips.push(`<span class="champ-chip scaled">+${sums.postWater}g Bypass</span>`);
+    if (isScaled) gearChips.push(`<span class="champ-chip scaled">${en ? `Scaled from ${tpl.dose}g` : `原 ${tpl.dose}g 已換算`}</span>`);
+    gearBox.innerHTML = `<h4>${en ? 'Equipment & Recommended Grind' : '器材與推薦研磨'}</h4><div class="champ-meta">${gearChips.join('')}</div>`;
+    wrap.append(gearBox);
+
+    // Dose Scaler
+    const doseWrap = document.createElement('div');
+    doseWrap.className = 'champ-dose-wrap';
+    const doseLabel = document.createElement('span');
+    doseLabel.style.fontSize = '13.5px';
+    doseLabel.style.color = '#e4e4e7';
+    doseLabel.textContent = en ? '⚖️ Scale Coffee Dose:' : '⚖️ 目標粉量（自動換算水量）：';
+    const doseBar = document.createElement('div');
+    doseBar.className = 'champ-dose-bar';
+    for (const val of [null, 12, 15, 18, 20, 25]) {
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.className = 'champ-pill';
+      b.setAttribute('aria-pressed', String(targetDose === val));
+      b.textContent = val === null ? (en ? `Original (${tpl.dose}g)` : `原配方 (${tpl.dose}g)`) : `${val}g`;
+      b.onclick = () => {
+        targetDose = val;
+        renderDialogContent();
+      };
+      doseBar.append(b);
+    }
+    const customInput = document.createElement('input');
+    customInput.type = 'number';
+    customInput.min = '5';
+    customInput.max = '100';
+    customInput.step = '0.5';
+    customInput.placeholder = en ? 'Custom g' : '自訂 g';
+    customInput.className = 'champ-dose-custom';
+    customInput.value = targetDose && ![12, 15, 18, 20, 25].includes(targetDose) ? String(targetDose) : '';
+    customInput.onchange = () => {
+      const v = Number(customInput.value);
+      targetDose = Number.isFinite(v) && v >= 5 && v <= 100 ? v : null;
+      renderDialogContent();
+    };
+    doseBar.append(customInput);
+    doseWrap.append(doseLabel, doseBar);
+    wrap.append(doseWrap);
+
+    // Tetsu 4:6 Customizer Controls
+    if (tpl.custom46) {
+      const box46 = document.createElement('div');
+      box46.className = 'champ-46-box';
+      const r1 = document.createElement('div');
+      r1.className = 'champ-46-row';
+      const l1 = document.createElement('span');
+      l1.className = 'champ-46-label';
+      l1.textContent = en ? 'First 40% (Acidity / Sweetness balance):' : '前 40% 兩段比例（決定甜酸走向）：';
+      const p1 = document.createElement('div');
+      p1.className = 'champ-pills';
+      for (const [id, zhLabel, enLabel] of [
+        ['balance', '標準平衡 (5:5)', 'Balanced (5:5)'],
+        ['sweet', '偏甜飽滿 (5:7)', 'Sweeter (5:7)'],
+        ['bright', '偏酸明亮 (7:5)', 'Brighter (7:5)']
+      ]) {
+        const b = document.createElement('button');
+        b.type = 'button';
+        b.className = 'champ-pill';
+        b.setAttribute('aria-pressed', String(tetsuTaste === id));
+        b.textContent = en ? enLabel : zhLabel;
+        b.onclick = () => {
+          tetsuTaste = id;
+          renderDialogContent();
+        };
+        p1.append(b);
+      }
+      r1.append(l1, p1);
+
+      const r2 = document.createElement('div');
+      r2.className = 'champ-46-row';
+      const l2 = document.createElement('span');
+      l2.className = 'champ-46-label';
+      l2.textContent = en ? 'Remaining 60% (Strength / Body pours):' : '後 60% 注水段數（決定濃度厚薄）：';
+      const p2 = document.createElement('div');
+      p2.className = 'champ-pills';
+      for (const [id, zhLabel, enLabel] of [
+        ['light', '清爽 (2段)', 'Light (2 pours)'],
+        ['standard', '標準 (3段)', 'Standard (3 pours)'],
+        ['strong', '濃郁 (4段)', 'Strong (4 pours)']
+      ]) {
+        const b = document.createElement('button');
+        b.type = 'button';
+        b.className = 'champ-pill';
+        b.setAttribute('aria-pressed', String(tetsuStrength === id));
+        b.textContent = en ? enLabel : zhLabel;
+        b.onclick = () => {
+          tetsuStrength = id;
+          renderDialogContent();
+        };
+        p2.append(b);
+      }
+      r2.append(l2, p2);
+      box46.append(r1, r2);
+      wrap.append(box46);
+    }
+
+    // Brewing Tips
+    if (built.notes) {
+      const notesBox = document.createElement('div');
+      notesBox.className = 'champ-detail-box';
+      notesBox.innerHTML = `<h4>${en ? 'Brewing Notes & Tips' : '沖煮要點'}</h4><p class="champ-desc" style="margin:0">${esc(built.notes)}</p>`;
+      wrap.append(notesBox);
+    }
+
+    // Expanded Full Step Timeline
+    const stepsBox = document.createElement('div');
+    stepsBox.className = 'champ-detail-box';
+    const stepsTitle = document.createElement('h4');
+    stepsTitle.textContent = en
+      ? `Brewing Steps (${built.steps.length} steps · ${sums.pours} pours · ${sums.brewWater}g)`
+      : `完整沖煮步驟（共 ${built.steps.length} 段 · ${sums.pours} 段注水 · ${sums.brewWater}g）`;
+    const ul = document.createElement('ol');
+    ul.className = 'champ-detail-steps';
+    let cum = 0;
+    let elapsed = 0;
+    built.steps.forEach((st, idx) => {
+      const li = document.createElement('li');
+      li.className = 'champ-detail-step';
+      const isManual = MANUAL_SET.has(st.type);
+      if (POUR_SET.has(st.type)) cum = Math.round((cum + st.water) * 10) / 10;
+      const timeLabel = isManual ? (en ? 'Manual' : '手動確認') : `${fmtSec(elapsed)} (${st.sec}s)`;
+      const amtLabel = isManual
+        ? `+${st.water}g`
+        : POUR_SET.has(st.type)
+          ? `+${st.water}g → ${cum}g`
+          : '';
+      if (!isManual) elapsed += st.sec;
+      li.innerHTML = `
+        <div class="champ-detail-step-head">
+          <span>${idx + 1}. ${esc(st.type)}${amtLabel ? ' · ' + esc(amtLabel) : ''}</span>
+          <span class="champ-detail-step-time">${esc(timeLabel)}</span>
+        </div>
+        ${st.note ? `<div class="champ-detail-step-note">${esc(st.note)}</div>` : ''}
+      `;
+      ul.append(li);
+    });
+    stepsBox.append(stepsTitle, ul);
+    wrap.append(stepsBox);
+
+    // Bottom Actions
+    const actions = document.createElement('div');
+    actions.className = 'champ-actions';
+    const btnBrew = document.createElement('button');
+    btnBrew.type = 'button';
+    btnBrew.className = 'champ-btn-primary';
+    btnBrew.textContent = en ? 'Brew Now →' : '直接帶入沖煮 →';
+    btnBrew.onclick = () => brewNow(built);
+
+    const btnStudio = document.createElement('button');
+    btnStudio.type = 'button';
+    btnStudio.className = 'champ-btn-sec';
+    btnStudio.textContent = en ? 'Load into Studio' : '載入工作室微調';
+    btnStudio.onclick = () => loadToStudio(built);
+
+    const btnSave = document.createElement('button');
+    btnSave.type = 'button';
+    btnSave.className = 'champ-btn-sec';
+    btnSave.textContent = en ? '＋ Save to My Recipes' : '＋ 存入我的配方';
+    btnSave.onclick = () => saveToMyRecipes(built);
+
+    actions.append(btnBrew, btnStudio, btnSave);
+    wrap.append(actions);
+
+    dialog.append(wrap);
+  }
+
   function renderDialogContent() {
     const en = isEn();
-    const list = CHAMPIONS.filter(c => activeCategory === 'all' || c.category === activeCategory);
-
     dialog.replaceChildren();
+
+    if (activeRecipeId) {
+      const tpl = CHAMPIONS.find(c => c.id === activeRecipeId);
+      if (tpl) {
+        renderDetailView(tpl, en);
+        return;
+      }
+      activeRecipeId = null;
+    }
+
+    const list = CHAMPIONS.filter(c => activeCategory === 'all' || c.category === activeCategory);
 
     const head = document.createElement('div');
     head.className = 'champ-head';
     head.innerHTML = `
       <div>
-        <h2>🏆 ${en ? 'Master Baristas & World Champion Recipes' : '名家手沖與世界賽冠軍配方圖鑑'}</h2>
+        <h2>🏆 ${en ? 'Master & Champion Recipes' : '名家與世界賽配方總覽'}</h2>
         <p class="hint" style="margin:4px 0 0">${en
-          ? 'Curated 2016–2024 WBrC Champions & iconic pour-over / Switch / AeroPress techniques. Scale to any coffee dose in one tap.'
-          : '精選 2016–2024 WBrC 世界冠軍與經典名家參數。可自選粉量自動等比例換算，或切換粕谷哲 4:6 酸甜濃淡配比，一鍵帶入計時沖煮！'}</p>
+          ? 'Tap any recipe to view full overview, scale dose, inspect steps, and start brewing.'
+          : '點選任一配方查看完整概覽、換算粉量、檢視步驟並一鍵帶入沖煮。'}</p>
       </div>
     `;
     const closeBtn = document.createElement('button');
@@ -1437,10 +1808,9 @@
     head.append(closeBtn);
     dialog.append(head);
 
-    // Controls: Category pills + Target Dose Scaler
+    // Step 1 Controls: Category pills ONLY (clean & compact!)
     const controls = document.createElement('div');
     controls.className = 'champ-controls';
-
     const catRow = document.createElement('div');
     catRow.className = 'champ-cats';
     for (const c of CATS) {
@@ -1456,64 +1826,36 @@
       catRow.append(btn);
     }
     controls.append(catRow);
-
-    const doseWrap = document.createElement('div');
-    doseWrap.className = 'champ-dose-wrap';
-    const doseLabel = document.createElement('span');
-    doseLabel.style.fontSize = '13.5px';
-    doseLabel.style.color = '#e4e4e7';
-    doseLabel.textContent = en ? '⚖️ Target Coffee Dose (auto-scale water):' : '⚖️ 目標粉量（自動等比例換算注水量）：';
-
-    const doseBar = document.createElement('div');
-    doseBar.className = 'champ-dose-bar';
-    for (const val of [null, 15, 18, 20]) {
-      const b = document.createElement('button');
-      b.type = 'button';
-      b.className = 'champ-pill';
-      b.setAttribute('aria-pressed', String(targetDose === val));
-      b.textContent = val === null ? (en ? 'Original Dose' : '原配方粉量') : `${val}g`;
-      b.onclick = () => {
-        targetDose = val;
-        renderDialogContent();
-      };
-      doseBar.append(b);
-    }
-
-    const customInput = document.createElement('input');
-    customInput.type = 'number';
-    customInput.min = '5';
-    customInput.max = '100';
-    customInput.step = '0.5';
-    customInput.placeholder = en ? 'Custom g' : '自訂 g';
-    customInput.className = 'champ-dose-custom';
-    customInput.value = targetDose && ![15, 18, 20].includes(targetDose) ? String(targetDose) : '';
-    customInput.onchange = () => {
-      const v = Number(customInput.value);
-      targetDose = Number.isFinite(v) && v >= 5 && v <= 100 ? v : null;
-      renderDialogContent();
-    };
-    doseBar.append(customInput);
-    doseWrap.append(doseLabel, doseBar);
-    controls.append(doseWrap);
     dialog.append(controls);
 
-    // Recipe Cards Grid
+    // Compact Summary Cards Grid
     const grid = document.createElement('div');
     grid.className = 'champ-grid';
 
     for (const tpl of list) {
-      const built = buildRecipeFromTemplate(tpl, {
-        lang: en ? 'en' : 'zh-Hant',
-        targetDose,
-        tasteMode: tetsuTaste,
-        strengthMode: tetsuStrength
-      });
+      const built = buildRecipeFromTemplate(tpl, { lang: en ? 'en' : 'zh-Hant' });
       const sums = recipeSums(built);
-      const isScaled = Math.abs(built.dose - tpl.dose) > 1e-6;
       const ratio = built.dose > 0 ? (sums.brewWater / built.dose).toFixed(1) : '—';
 
       const card = document.createElement('article');
-      card.className = 'champ-card';
+      card.className = 'champ-card champ-card-clickable';
+      card.tabIndex = 0;
+      card.setAttribute('role', 'button');
+
+      const openDetail = () => {
+        listScrollTop = dialog.scrollTop;
+        activeRecipeId = tpl.id;
+        targetDose = null;
+        renderDialogContent();
+        dialog.scrollTop = 0;
+      };
+      card.onclick = openDetail;
+      card.onkeydown = e => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          openDetail();
+        }
+      };
 
       const top = document.createElement('div');
       top.className = 'champ-card-top';
@@ -1532,129 +1874,25 @@
       meta.className = 'champ-meta';
       const chips = [
         `<span class="champ-chip">${esc(built.dripper)}</span>`,
-        `<span class="champ-chip ${isScaled ? 'scaled' : ''}">${built.dose}g : ${sums.brewWater}g (1:${ratio})</span>`,
+        `<span class="champ-chip">${built.dose}g : ${sums.brewWater}g (1:${ratio})</span>`,
         `<span class="champ-chip">${built.temp}°C</span>`,
         `<span class="champ-chip">${fmtSec(sums.totalSec)}</span>`,
         `<span class="champ-chip">${esc(en ? tpl.grindGuideEn : tpl.grindGuide)}</span>`
       ];
       if (sums.postIce > 0) chips.push(`<span class="champ-chip scaled">+${sums.postIce}g ${en ? 'Ice' : '冰塊'}</span>`);
       if (sums.postWater > 0) chips.push(`<span class="champ-chip scaled">+${sums.postWater}g Bypass</span>`);
-      if (isScaled) chips.push(`<span class="champ-chip scaled">${en ? `Scaled from ${tpl.dose}g` : `原 ${tpl.dose}g 已換算`}</span>`);
       meta.innerHTML = chips.join('');
       card.append(meta);
 
       const desc = document.createElement('p');
-      desc.className = 'champ-desc';
+      desc.className = 'champ-desc champ-desc-clamp';
       desc.textContent = en ? tpl.summaryEn : tpl.summary;
       card.append(desc);
 
-      // Tetsu Kasuya 4:6 Customizer Controls
-      if (tpl.custom46) {
-        const box46 = document.createElement('div');
-        box46.className = 'champ-46-box';
-
-        const r1 = document.createElement('div');
-        r1.className = 'champ-46-row';
-        const l1 = document.createElement('span');
-        l1.className = 'champ-46-label';
-        l1.textContent = en ? 'First 40% (Acidity / Sweetness balance):' : '前 40% 兩段比例（決定甜酸走向）：';
-        const p1 = document.createElement('div');
-        p1.className = 'champ-pills';
-        for (const [id, zhLabel, enLabel] of [
-          ['balance', '標準平衡 (5:5)', 'Balanced (5:5)'],
-          ['sweet', '偏甜飽滿 (5:7)', 'Sweeter (5:7)'],
-          ['bright', '偏酸明亮 (7:5)', 'Brighter (7:5)']
-        ]) {
-          const b = document.createElement('button');
-          b.type = 'button';
-          b.className = 'champ-pill';
-          b.setAttribute('aria-pressed', String(tetsuTaste === id));
-          b.textContent = en ? enLabel : zhLabel;
-          b.onclick = () => {
-            tetsuTaste = id;
-            renderDialogContent();
-          };
-          p1.append(b);
-        }
-        r1.append(l1, p1);
-
-        const r2 = document.createElement('div');
-        r2.className = 'champ-46-row';
-        const l2 = document.createElement('span');
-        l2.className = 'champ-46-label';
-        l2.textContent = en ? 'Remaining 60% (Strength / Body pours):' : '後 60% 注水段數（決定濃度厚薄）：';
-        const p2 = document.createElement('div');
-        p2.className = 'champ-pills';
-        for (const [id, zhLabel, enLabel] of [
-          ['light', '清爽 (2段)', 'Light (2 pours)'],
-          ['standard', '標準 (3段)', 'Standard (3 pours)'],
-          ['strong', '濃郁 (4段)', 'Strong (4 pours)']
-        ]) {
-          const b = document.createElement('button');
-          b.type = 'button';
-          b.className = 'champ-pill';
-          b.setAttribute('aria-pressed', String(tetsuStrength === id));
-          b.textContent = en ? enLabel : zhLabel;
-          b.onclick = () => {
-            tetsuStrength = id;
-            renderDialogContent();
-          };
-          p2.append(b);
-        }
-        r2.append(l2, p2);
-
-        box46.append(r1, r2);
-        card.append(box46);
-      }
-
-      // Expandable step breakdown
-      const details = document.createElement('details');
-      details.className = 'champ-steps-details';
-      const summaryEl = document.createElement('summary');
-      summaryEl.textContent = en
-        ? `Inspect ${built.steps.length} steps (${sums.pours} pours · ${sums.brewWater}g)`
-        : `檢視完整 ${built.steps.length} 段步驟（${sums.pours} 段注水 · 共 ${sums.brewWater}g）`;
-      const ol = document.createElement('ol');
-      ol.className = 'champ-step-list';
-      let cum = 0;
-      for (const st of built.steps) {
-        const li = document.createElement('li');
-        if (POUR_SET.has(st.type)) cum = Math.round((cum + st.water) * 10) / 10;
-        const amtText = MANUAL_SET.has(st.type)
-          ? ` +${st.water}g (${en ? 'Manual' : '手動確認'})`
-          : POUR_SET.has(st.type)
-            ? ` ${st.sec}s · +${st.water}g → ${cum}g`
-            : ` ${st.sec}s`;
-        li.textContent = `${st.type}${amtText}${st.note ? '｜' + st.note : ''}`;
-        ol.append(li);
-      }
-      details.append(summaryEl, ol);
-      card.append(details);
-
-      // Action buttons
-      const actions = document.createElement('div');
-      actions.className = 'champ-actions';
-
-      const btnBrew = document.createElement('button');
-      btnBrew.type = 'button';
-      btnBrew.className = 'champ-btn-primary';
-      btnBrew.textContent = en ? 'Brew Now →' : '直接帶入沖煮 →';
-      btnBrew.onclick = () => brewNow(built);
-
-      const btnStudio = document.createElement('button');
-      btnStudio.type = 'button';
-      btnStudio.className = 'champ-btn-sec';
-      btnStudio.textContent = en ? 'Load into Studio' : '載入工作室微調';
-      btnStudio.onclick = () => loadToStudio(built);
-
-      const btnSave = document.createElement('button');
-      btnSave.type = 'button';
-      btnSave.className = 'champ-btn-sec';
-      btnSave.textContent = en ? '＋ Save to My Recipes' : '＋ 存入我的配方';
-      btnSave.onclick = () => saveToMyRecipes(built);
-
-      actions.append(btnBrew, btnStudio, btnSave);
-      card.append(actions);
+      const cue = document.createElement('div');
+      cue.className = 'champ-card-cue';
+      cue.textContent = en ? 'View overview & steps →' : '查看概覽與步驟 →';
+      card.append(cue);
 
       grid.append(card);
     }
@@ -1663,8 +1901,12 @@
   }
 
   function openChampionDialog() {
+    activeRecipeId = null;
+    targetDose = null;
+    listScrollTop = 0;
     renderDialogContent();
     if (!dialog.open) dialog.showModal();
+    dialog.scrollTop = 0;
   }
 
   function mountTriggers() {
