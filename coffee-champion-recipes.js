@@ -1006,47 +1006,61 @@
         align-items: center;
         justify-content: center;
         gap: 6px;
-        background: #ffffff !important;
-        color: #111111 !important;
-        border: 1px solid #ffffff !important;
-        font-weight: 600 !important;
-      }
-        border: 1px solid rgba(255, 255, 255, 0.28) !important;
+        background: rgba(255, 255, 255, 0.1) !important;
+        border: 1.5px solid rgba(255, 255, 255, 0.45) !important;
         color: #ffffff !important;
-        font-weight: 600;
-        border-radius: 12px !important;
+        font-weight: 600 !important;
+        border-radius: 13px !important;
         padding: 9px 14px !important;
         min-height: 44px;
-        transition: background 0.16s ease, border-color 0.16s ease;
+        transition: background 0.16s ease, border-color 0.16s ease, color 0.16s ease;
       }
       .champ-trigger-btn:hover {
         background: #ffffff !important;
         color: #000000 !important;
         border-color: #ffffff !important;
       }
+      #openChampionLibraryGuide {
+        display: flex;
+        width: 100%;
+        margin: 10px 0 0 !important;
+      }
       #coffeeChampionDialog {
-        width: min(920px, calc(100vw - 20px)) !important;
-        max-width: 920px !important;
+        box-sizing: border-box;
+        width: min(920px, calc(100vw - 24px)) !important;
+        max-width: calc(100vw - 24px) !important;
         max-height: 90vh;
         background: #0a0a0a !important;
         border: 1px solid rgba(255, 255, 255, 0.2) !important;
-        border-radius: 22px !important;
-        padding: 20px !important;
+        border-radius: 20px !important;
+        padding: 18px !important;
         color: #f4f4f5 !important;
       }
       .champ-head {
         display: flex;
-        flex-wrap: wrap;
+        flex-wrap: nowrap;
         justify-content: space-between;
         align-items: flex-start;
-        gap: 12px;
-        margin-bottom: 14px;
-        padding-bottom: 12px;
+        gap: 10px;
+        margin-bottom: 12px;
+        padding-bottom: 10px;
         border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+      }
+      .champ-head > div {
+        min-width: 0;
+        flex: 1 1 auto;
+      }
+      .champ-head > button {
+        flex-shrink: 0;
+        margin: 0 !important;
+        padding: 6px 12px !important;
+        min-height: 36px !important;
+        font-size: 13.5px !important;
+        white-space: nowrap;
       }
       .champ-head h2 {
         margin: 0;
-        font-size: 1.35rem;
+        font-size: 1.25rem;
         color: #ffffff;
       }
       .champ-controls {
@@ -1102,6 +1116,46 @@
       @media (max-width: 720px) {
         .champ-grid {
           grid-template-columns: 1fr;
+        }
+      }
+      @media (max-width: 599px) {
+        #coffeeChampionDialog {
+          padding: 14px !important;
+          border-radius: 16px !important;
+        }
+        .champ-head {
+          margin-bottom: 10px;
+          padding-bottom: 8px;
+        }
+        .champ-head h2 {
+          font-size: 1.12rem;
+        }
+        .champ-head p {
+          display: none;
+        }
+        .champ-controls {
+          gap: 8px;
+          margin-bottom: 12px;
+        }
+        .champ-cats {
+          flex-wrap: nowrap;
+          overflow-x: auto;
+          -webkit-overflow-scrolling: touch;
+          padding-bottom: 4px;
+        }
+        .champ-cats .champ-pill {
+          flex-shrink: 0;
+          white-space: nowrap;
+          min-height: 34px !important;
+          padding: 4px 10px !important;
+          font-size: 13px !important;
+        }
+        .champ-dose-wrap {
+          padding: 8px 10px;
+          gap: 6px;
+        }
+        .champ-card {
+          padding: 14px;
         }
       }
       .champ-card {
@@ -1638,7 +1692,7 @@
       guideBtn.textContent = L('🏆 載入名家／冠軍配方', '🏆 Champion Recipes');
       guideBtn.onclick = openChampionDialog;
       const beginBtn = document.getElementById('flowBegin');
-      if (beginBtn) beginBtn.before(guideBtn);
+      if (beginBtn) beginBtn.after(guideBtn);
       else flowPrepare.append(guideBtn);
     }
   }

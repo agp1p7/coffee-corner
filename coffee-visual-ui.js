@@ -287,11 +287,23 @@
 
     @media (max-width: 599px) {
       body {
-        padding: 12px 14px 48px !important;
+        padding: 10px 10px 48px !important;
+      }
+      .cv-header-bar {
+        padding-bottom: 10px;
+        margin-bottom: 8px;
+        gap: 8px 12px;
+      }
+      .cv-brand-logo {
+        width: 40px;
+        height: 40px;
       }
       .cv-header-actions {
         width: 100%;
         justify-content: space-between;
+      }
+      nav {
+        margin: 6px 0 12px !important;
       }
       html:not(.coffee-installed) nav {
         grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
@@ -306,6 +318,60 @@
         font-size: 14.5px !important;
         padding: 9px 10px !important;
         min-height: 44px !important;
+      }
+      .card, .flow-timeline {
+        padding: 14px !important;
+        border-radius: 16px !important;
+      }
+      dialog {
+        padding: 14px !important;
+        border-radius: 16px !important;
+      }
+      details {
+        padding: 4px 10px !important;
+        border-radius: 12px !important;
+        margin: 10px 0 !important;
+      }
+      details[open] {
+        padding-bottom: 12px !important;
+      }
+      .box, .flow-step, .cv-chart-card {
+        padding: 12px !important;
+        border-radius: 12px !important;
+      }
+      #coffeeRecipeSharing {
+        display: grid !important;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 8px !important;
+        margin: 10px 0 !important;
+      }
+      #coffeeRecipeSharing button {
+        width: 100%;
+        margin: 0 !important;
+      }
+      #coffeeRecipePanel > #add,
+      #coffeeRecipePanel > #aero,
+      #coffeeRecipePanel > #copy,
+      #coffeeRecipePanel > #fav {
+        width: calc(50% - 4px);
+        margin: 4px 0 !important;
+      }
+      #coffeeRecipePanel > #add,
+      #coffeeRecipePanel > #copy {
+        margin-right: 8px !important;
+      }
+      #coffeeRecipePanel > #openChampionLibraryStudio {
+        display: flex;
+        width: 100%;
+        margin: 8px 0 4px !important;
+      }
+      #steps > .box .fields {
+        grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+        gap: 8px !important;
+      }
+      #steps > .box .fields > label:first-child,
+      #steps > .box .fields > label:last-child {
+        grid-column: 1 / -1;
       }
     }
 

@@ -69,5 +69,5 @@ document.head.append(style);render();
 })();
 (function(){
 if(typeof document==='undefined'||document.getElementById('coffeePwaLoader'))return;
-const base=new URL('.',document.currentScript?document.currentScript.src:document.baseURI),script=document.createElement('script');script.id='coffeePwaLoader';script.src=new URL('coffee-pwa.js?v=3',base).href;script.defer=true;document.head.append(script);
+const base=new URL('.',document.currentScript?document.currentScript.src:document.baseURI),script=document.createElement('script');script.id='coffeePwaLoader';script.src=new URL('coffee-pwa.js?v=4',base).href;script.defer=true;document.head.append(script);
 })();
