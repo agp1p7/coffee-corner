@@ -210,7 +210,95 @@ function waterUI(){const f=configureStep(type,sec,water,kind);hint.hidden=!f.man
 const x={row,heading,caption,type,sec,water,note,kind};x.up=button(row,'↑ 上移','↑ Move up',()=>move(x,-1));x.down=button(row,'↓ 下移','↓ Move down',()=>move(x,1));x.remove=button(row,'刪除此步驟','Delete step',()=>{const i=rows.indexOf(x);if(i<0||rows.length<=1)return;rows.splice(i,1);row.remove();refresh();rows[Math.min(i,rows.length-1)].heading.focus();});rows.push(x);}
 steps.forEach(create);refresh();return rows;
 }
-const editDialog=modal();function editCup(c){editDialog.replaceChildren();const form=E('form');editDialog.append(text(E('h2'),'編輯這杯紀錄','Edit this brew'),form);const rating=field(form,'喜歡程度','Enjoyment',String(c.rating),['1','2','3','4','5']),strength=field(form,'濃淡','Strength',c.strength,['剛好','太淡','太濃']),taste=field(form,'風味筆記','Tasting notes',c.taste,'textarea'),next=field(form,'下次調整','Next change',c.next),seconds=field(form,'實際計時（秒）','Actual timed seconds',c.seconds,'number'),more=detail(form,'修正本次參數','Correct this brew’s parameters'),r=copy(c.recipe),controls={};for(const spec of C)controls[spec[0]]=field(more,spec[1],spec[1],r[spec[0]],spec[2]);controls.name.required=true;const sc={};for(const k of S)sc[k]=field(more,k,k,c[k]??'','number');const mass=field(more,'成品重 g','Beverage mass g',c.yieldMass??'','number'),tds=field(more,'TDS %','TDS %',c.tds??'','number');const rows=cupStepEditor(more,r.steps);form.append(text(E('p'),'只更新這杯，不改原配方與其他紀錄。','Only this entry changes, not the recipe or other entries.'));const submit=text(E('button'),'儲存修改','Save changes');submit.type='submit';form.append(submit);button(editDialog,'取消','Cancel',()=>editDialog.close());form.onsubmit=e=>{e.preventDefault();if(!form.reportValidity())return;const n=copy(c);for(const spec of C)n.recipe[spec[0]]=spec[2]==='number'?Number(controls[spec[0]].value):controls[spec[0]].value.trim();n.recipe.steps=rows.map(stepValue);n.rating=Number(rating.value);n.strength=strength.value;n.taste=taste.value.trim();n.next=next.value.trim();n.seconds=seconds.value===''?NaN:Number(seconds.value);for(const k of S)n[k]=sc[k].value===''?null:Number(sc[k].value);n.yieldMass=mass.value===''?null:Number(mass.value);n.tds=tds.value===''?null:Number(tds.value);if(!vd({...db,cups:[n]})){msg(L('請確認數值、步驟與欄位長度','Check values, steps and field lengths'));return;}if(!same(n.recipe,c.recipe)){delete n.recipe.beanId;delete n.recipe.beanSnapshot;delete n.recipe[FLAVOR];}for(const t of ['dripper','grinder'])if(n.recipe[t]!==c.recipe[t]){delete n.recipe[t+'EquipmentId'];if(n.recipe.equipmentSnapshot)delete n.recipe.equipmentSnapshot[t];}if(n.recipe.grinder!==c.recipe.grinder)delete n.recipe.grindUnit;n.recipe.grindValue=n.recipe.grind.trim()!==''&&Number.isFinite(Number(n.recipe.grind))&&Number(n.recipe.grind)>=0?Number(n.recipe.grind):null;n.originalRecipe=n.originalRecipe||copy(c.recipe);if(JSON.stringify(n.recipe.steps)!==JSON.stringify(c.recipe.steps))for(const k of ['guideEvents','guideCursor','guideMode'])delete n.recipe[k];n.updatedAt=new Date().toISOString();const i=db.cups.findIndex(x=>x.id===c.id);if(i<0)return;db.cups[i]=n;if(!save()){db.cups[i]=c;msg(L('未能儲存修改，原紀錄保留；請先備份並檢查儲存狀態。','Could not save the edit. The original entry was kept; back up and check storage.'));return;}editDialog.close();logs();};editDialog.showModal();}
+const editDialog=modal();
+function toLocalDatetimeValue(iso){const d=iso?new Date(iso):new Date();const dt=Number.isFinite(d.getTime())?d:new Date();const p=n=>String(n).padStart(2,'0');return `${dt.getFullYear()}-${p(dt.getMonth()+1)}-${p(dt.getDate())}T${p(dt.getHours())}:${p(dt.getMinutes())}`;}
+function addCup(){
+ if(!db.recipes.length){msg(L('請先建立至少一個配方','Create at least one recipe first'));return;}
+ editDialog.replaceChildren();
+ const form=E('form');
+ editDialog.append(text(E('h2'),'補記沖煮紀錄','Log past brew'),form);
+ let r=clean(db.recipes.find(x=>x.id===selected)||db.recipes[0]);
+ const templatePick=field(form,'配方範本','Recipe template',r.id,[]);
+ for(const rec of db.recipes){const o=E('option',(rec.favorite?'★ ':'')+rec.name);o.value=rec.id;templatePick.append(o);}
+ templatePick.value=r.id;
+ const brewTime=field(form,'沖煮時間','Brew date & time',toLocalDatetimeValue(),'datetime-local');
+ brewTime.required=true;
+ const pickGrid=E('div');pickGrid.className='fields';form.append(pickGrid);
+ const bPick=field(pickGrid,'咖啡豆','Coffee','',[]);
+ const dPick=field(pickGrid,'沖煮器具','Brewer','',[]);
+ const gPick=field(pickGrid,'磨豆機','Grinder','',[]);
+ const quickGrid=E('div');quickGrid.className='fields';form.append(quickGrid);
+ const qDose=field(quickGrid,'粉量 g','Coffee dose g',r.dose,'number');qDose.min='.1';qDose.max='200';qDose.required=true;
+ const qTemp=field(quickGrid,'水溫 °C','Temperature °C',r.temp,'number');qTemp.min='0';qTemp.max='100';qTemp.required=true;
+ const qGrind=field(quickGrid,'研磨刻度','Grind setting',r.grind);
+ const seconds=field(quickGrid,'實際計時（秒）','Actual timed seconds',m(r).total,'number');seconds.min='0';seconds.max='86400';seconds.step='1';seconds.required=true;
+ const rating=field(form,'喜歡程度','Enjoyment','3',['1','2','3','4','5']);
+ const strength=field(form,'濃淡','Strength','剛好',['剛好','太淡','太濃']);
+ const taste=field(form,'風味筆記','Tasting notes','','textarea');
+ const next=field(form,'下次調整','Next change','');
+ const more=detail(form,'進階參數與步驟（選填）','Advanced parameters & steps (optional)');
+ const sc={};for(const k of S){sc[k]=field(more,k,k,'','number');sc[k].min='1';sc[k].max='5';sc[k].step='1';}
+ const mass=field(more,'成品重 g','Beverage mass g','','number');
+ const tds=field(more,'TDS %','TDS %','','number');
+ const advFields=E('div');advFields.className='fields';more.append(advFields);
+ const advSkip=new Set(['dose','temp','grind',...B]);
+ const controls={};
+ for(const spec of C){if(!advSkip.has(spec[0]))controls[spec[0]]=field(advFields,spec[1],spec[1],r[spec[0]],spec[2]);}
+ if(controls.name)controls.name.required=true;
+ const stepWrap=E('div');more.append(stepWrap);
+ let rows=cupStepEditor(stepWrap,r.steps);
+ function syncFromTemplate(){
+  beanSelect(bPick,r);gearSelect(dPick,r,'dripper');gearSelect(gPick,r,'grinder');
+  qDose.value=r.dose;qTemp.value=r.temp;qGrind.value=r.grind;seconds.value=m(r).total;
+  for(const k of Object.keys(controls))controls[k].value=r[k]??'';
+  stepWrap.replaceChildren();rows=cupStepEditor(stepWrap,r.steps);
+ }
+ syncFromTemplate();
+ templatePick.onchange=()=>{const chosen=db.recipes.find(x=>x.id===templatePick.value);if(!chosen)return;r=clean(chosen);syncFromTemplate();};
+ bPick.onchange=()=>{stampBean(r,bPick.value);};
+ dPick.onchange=()=>{stampGear(r,'dripper',dPick.value);};
+ gPick.onchange=()=>{stampGear(r,'grinder',gPick.value);qGrind.value=r.grind;};
+ form.append(text(E('p'),'補記只新增這筆沖煮紀錄，不會修改原配方。','Logging this brew adds a journal entry only; the source recipe is unchanged.'));
+ const submit=text(E('button'),'新增紀錄','Add entry');submit.type='submit';form.append(submit);
+ button(editDialog,'取消','Cancel',()=>editDialog.close());
+ form.onsubmit=e=>{
+  e.preventDefault();
+  if(!form.reportValidity())return;
+  if(db.cups.length>=20000){msg(L('紀錄已達上限，請備份清理','Journal limit reached; back up and clear old entries'));return;}
+  const nRecipe=copy(r);
+  for(const k of Object.keys(controls)){const spec=C.find(x=>x[0]===k);nRecipe[k]=spec&&spec[2]==='number'?Number(controls[k].value):controls[k].value.trim();}
+  nRecipe.dose=Number(qDose.value);
+  nRecipe.temp=Number(qTemp.value);
+  nRecipe.grind=qGrind.value.trim();
+  nRecipe.grindValue=nRecipe.grind!==''&&Number.isFinite(Number(nRecipe.grind))&&Number(nRecipe.grind)>=0?Number(nRecipe.grind):null;
+  nRecipe.steps=rows.map(stepValue);
+  const parsedTime=Date.parse(brewTime.value);
+  const isoDate=Number.isFinite(parsedTime)?new Date(parsedTime).toISOString():new Date().toISOString();
+  const c={
+   id:uid(),
+   date:isoDate,
+   recipe:nRecipe,
+   seconds:Math.round(Number(seconds.value)),
+   breaks:m(nRecipe).breaks,
+   markers:[],
+   strength:strength.value,
+   rating:Number(rating.value),
+   taste:taste.value.trim(),
+   next:next.value.trim(),
+   yieldMass:mass.value===''?null:Number(mass.value),
+   tds:tds.value===''?null:Number(tds.value)
+  };
+  for(const k of S)c[k]=sc[k].value===''?null:Number(sc[k].value);
+  if(!vd({...db,cups:[c]})){msg(L('請確認數值、步驟與欄位長度','Check values, steps and field lengths'));return;}
+  db.cups.unshift(c);
+  if(!save()){db.cups.splice(db.cups.indexOf(c),1);msg(L('未能儲存紀錄，請先備份並檢查儲存狀態。','Could not save the entry. Back up and check storage.'));return;}
+  editDialog.close();
+  logs();
+  msg(L('已補記這筆沖煮紀錄','Past brew logged'));
+ };
+ editDialog.showModal();
+}
+function editCup(c){editDialog.replaceChildren();const form=E('form');editDialog.append(text(E('h2'),'編輯這杯紀錄','Edit this brew'),form);const rating=field(form,'喜歡程度','Enjoyment',String(c.rating),['1','2','3','4','5']),strength=field(form,'濃淡','Strength',c.strength,['剛好','太淡','太濃']),taste=field(form,'風味筆記','Tasting notes',c.taste,'textarea'),next=field(form,'下次調整','Next change',c.next),seconds=field(form,'實際計時（秒）','Actual timed seconds',c.seconds,'number'),more=detail(form,'修正本次參數','Correct this brew’s parameters'),r=copy(c.recipe),controls={};for(const spec of C)controls[spec[0]]=field(more,spec[1],spec[1],r[spec[0]],spec[2]);controls.name.required=true;const sc={};for(const k of S)sc[k]=field(more,k,k,c[k]??'','number');const mass=field(more,'成品重 g','Beverage mass g',c.yieldMass??'','number'),tds=field(more,'TDS %','TDS %',c.tds??'','number');const rows=cupStepEditor(more,r.steps);form.append(text(E('p'),'只更新這杯，不改原配方與其他紀錄。','Only this entry changes, not the recipe or other entries.'));const submit=text(E('button'),'儲存修改','Save changes');submit.type='submit';form.append(submit);button(editDialog,'取消','Cancel',()=>editDialog.close());form.onsubmit=e=>{e.preventDefault();if(!form.reportValidity())return;const n=copy(c);for(const spec of C)n.recipe[spec[0]]=spec[2]==='number'?Number(controls[spec[0]].value):controls[spec[0]].value.trim();n.recipe.steps=rows.map(stepValue);n.rating=Number(rating.value);n.strength=strength.value;n.taste=taste.value.trim();n.next=next.value.trim();n.seconds=seconds.value===''?NaN:Number(seconds.value);for(const k of S)n[k]=sc[k].value===''?null:Number(sc[k].value);n.yieldMass=mass.value===''?null:Number(mass.value);n.tds=tds.value===''?null:Number(tds.value);if(!vd({...db,cups:[n]})){msg(L('請確認數值、步驟與欄位長度','Check values, steps and field lengths'));return;}if(!same(n.recipe,c.recipe)){delete n.recipe.beanId;delete n.recipe.beanSnapshot;delete n.recipe[FLAVOR];}for(const t of ['dripper','grinder'])if(n.recipe[t]!==c.recipe[t]){delete n.recipe[t+'EquipmentId'];if(n.recipe.equipmentSnapshot)delete n.recipe.equipmentSnapshot[t];}if(n.recipe.grinder!==c.recipe.grinder)delete n.recipe.grindUnit;n.recipe.grindValue=n.recipe.grind.trim()!==''&&Number.isFinite(Number(n.recipe.grind))&&Number(n.recipe.grind)>=0?Number(n.recipe.grind):null;n.originalRecipe=n.originalRecipe||copy(c.recipe);if(JSON.stringify(n.recipe.steps)!==JSON.stringify(c.recipe.steps))for(const k of ['guideEvents','guideCursor','guideMode'])delete n.recipe[k];n.updatedAt=new Date().toISOString();const i=db.cups.findIndex(x=>x.id===c.id);if(i<0)return;db.cups[i]=n;if(!save()){db.cups[i]=c;msg(L('未能儲存修改，原紀錄保留；請先備份並檢查儲存狀態。','Could not save the edit. The original entry was kept; back up and check storage.'));return;}editDialog.close();logs();};editDialog.showModal();}
 const shareDialog=modal();let activeCard=null,cardBlob=null,revision=0,shareBeanFlavor='';const canvas=E('canvas'),shareControls=E('div'),format=field(shareControls,'圖片版型','Image format','square',['square','story']),publicNote=field(shareControls,'本杯風味筆記（分享用，可修改）','This cup’s tasting notes (editable for this card)','','textarea'),gearCheck=field(shareControls,'包含器材','Include equipment','','checkbox'),dateCheck=field(shareControls,'包含日期','Include date','','checkbox'),cardNotice=E('p');publicNote.maxLength=5000;publicNote.rows=3;publicNote.style.width='100%';text(format.children[0],'方形貼文','Square post');text(format.children[1],'直式限時動態','Portrait story');cardNotice.setAttribute('role','status');shareDialog.append(text(E('h2'),'沖煮參數分享卡','Brew parameter card'),shareControls,cardNotice,canvas);
 function downloadCard(){if(!cardBlob)return;const u=URL.createObjectURL(cardBlob),a=E('a');a.href=u;a.download='coffee-brew.png';document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(u),15000);}
 const downloadButton=button(shareDialog,'下載 PNG','Download PNG',downloadCard),shareButton=button(shareDialog,'分享／下載','Share / download',async()=>{if(!cardBlob)return;try{const f=new File([cardBlob],'coffee-brew.png',{type:'image/png'});if(navigator.canShare&&navigator.canShare({files:[f]})&&navigator.share)await navigator.share({files:[f]});else downloadCard();}catch(e){if(e.name!=='AbortError'){msg(L('無法直接分享，改為下載圖片','Sharing unavailable; downloading instead'));downloadCard();}}});button(shareDialog,'關閉','Close',()=>shareDialog.close());
@@ -224,7 +312,7 @@ let logSortDesc=true;
 const sortButton=own(E('button'));sortButton.type='button';sortButton.id='logSortToggle';
 function updateSortLabel(){sortButton.textContent=logSortDesc?L('時間：新 → 舊','Sort: Newest first'):L('時間：舊 → 新','Sort: Oldest first');}
 sortButton.onclick=()=>{logSortDesc=!logSortDesc;updateSortLabel();logs();};
-const compareBtn=$('compare');if(compareBtn)compareBtn.after(sortButton);updateSortLabel();
+const compareBtn=$('compare');if(compareBtn){compareBtn.after(sortButton);const addCupBtn=own(E('button'));addCupBtn.type='button';addCupBtn.id='addCupEntry';text(addCupBtn,'＋補記紀錄','＋ Log past brew');addCupBtn.onclick=addCup;sortButton.after(addCupBtn);}updateSortLabel();
 const oldLogs=logs;logs=function(){oldLogs();prune();const q=$('search').value.trim().toLowerCase(),list=db.cups.filter(c=>JSON.stringify(c).toLowerCase().includes(q)),entriesEl=$('entries'),pairs=Array.from(entriesEl.children).map((entry,i)=>({entry,c:list[i],i})).filter(x=>x.c);pairs.forEach(({entry,c})=>{const bar=own(E('div'));button(bar,'編輯紀錄','Edit entry',()=>editCup(c));button(bar,'產生分享卡','Share card',()=>openShare(c));button(bar,'另存為配方','Save as recipe',()=>{if(run||db.recipes.length>=500){msg(L('請先重設計時，並確認配方數量上限','Reset the timer and check the recipe limit'));return;}const r=clean(c.recipe);r.id=uid();r.name=r.name.slice(0,250)+L('｜副本',' | Copy');db.recipes.push(r);selected=r.id;save();load();go('brew');});entry.append(bar);});pairs.sort((a,b)=>{const ta=Date.parse(a.c.date),tb=Date.parse(b.c.date),va=Number.isFinite(ta)?ta:0,vb=Number.isFinite(tb)?tb:0;if(va!==vb)return logSortDesc?vb-va:va-vb;return logSortDesc?a.i-b.i:b.i-a.i;});entriesEl.replaceChildren(...pairs.map(x=>x.entry));};
 $('search').oninput=()=>logs();
 const oldSaveCup=$('saveCup').onclick;$('saveCup').onclick=function(e){const n=db.cups.length;oldSaveCup.call(this,e);if(db.cups.length>n){for(const k of S)$(k).value='';showSub('records');go('history');openShare(db.cups[0]);}};
