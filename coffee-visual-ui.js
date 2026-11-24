@@ -136,20 +136,10 @@
       line-height: 1.2;
       color: var(--text-main);
     }
-    .cv-brand-meta {
-      display: flex;
-      flex-wrap: wrap;
-      align-items: center;
-      gap: 4px 10px;
-      margin-top: 3px;
-    }
-    .cv-brand-meta small,
-    .cv-brand-meta #coffeeLayoutStatus {
-      display: inline !important;
-      margin: 0 !important;
-      font-size: 13px !important;
-      color: var(--text-muted) !important;
-      line-height: 1.4 !important;
+    .cv-brand-meta,
+    body > small,
+    #coffeeLayoutStatus {
+      display: none !important;
     }
     .cv-header-actions {
       display: flex;
@@ -805,6 +795,86 @@
       color: var(--text-dim);
       margin-top: 4px;
     }
+
+    /* 4. 細線 SVG 圖示化按鈕與精簡參數膠囊 */
+    .cv-btn-content {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      pointer-events: none;
+    }
+    .cv-btn-content svg,
+    .cv-chip svg,
+    .cv-metric-label svg {
+      width: 15px;
+      height: 15px;
+      flex-shrink: 0;
+      stroke: currentColor;
+    }
+    .cv-icon-only {
+      width: 40px !important;
+      min-width: 40px !important;
+      padding: 0 !important;
+      display: inline-flex !important;
+      align-items: center;
+      justify-content: center;
+    }
+    .cv-icon-danger {
+      background: rgba(248, 113, 113, 0.1) !important;
+      border-color: rgba(248, 113, 113, 0.28) !important;
+      color: #fca5a5 !important;
+      margin-left: auto !important;
+    }
+    .cv-icon-danger:hover:not(:disabled) {
+      background: rgba(248, 113, 113, 0.22) !important;
+      border-color: rgba(248, 113, 113, 0.5) !important;
+    }
+    .cv-card-actions {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 8px;
+      margin-top: 12px;
+      padding-top: 10px;
+      border-top: 1px solid var(--oled-border-subtle);
+    }
+    .cv-card-actions button {
+      margin: 0 !important;
+      min-height: 38px !important;
+      padding: 6px 12px !important;
+      font-size: 13.5px !important;
+    }
+    .cv-cup-chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin: 8px 0 10px;
+    }
+    .cv-cup-chips .cv-chip {
+      padding: 4px 10px;
+      font-size: 12.5px;
+      background: #251f1b;
+    }
+    .cv-cup-chips .cv-chip.accent {
+      background: var(--accent-soft);
+      border-color: var(--accent-border);
+      color: #f3cfa0;
+    }
+    .cv-raw-hidden {
+      display: none !important;
+    }
+    .cv-metric-label {
+      display: inline-flex !important;
+      align-items: center;
+      justify-content: center;
+      gap: 4px;
+    }
+    .cv-metric-label svg {
+      width: 13px;
+      height: 13px;
+      color: var(--accent);
+    }
   `;
   document.head.append(style);
 
@@ -849,6 +919,48 @@
   function roastDotsCount(roastStr) {
     const map = { '淺焙': 1, '中淺焙': 2, '中焙': 3, '中深焙': 4, '深焙': 5 };
     return map[roastStr] || 0;
+  }
+
+  const UI_ICONS = {
+    plus: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14"/><path d="M5 12h14"/></svg>`,
+    camera: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/></svg>`,
+    edit: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 1 1 3 3L7 19l-4 1 1-4Z"/></svg>`,
+    share: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="m8.59 13.51 6.83 3.98"/><path d="m15.41 6.51-6.82 3.98"/></svg>`,
+    copy: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>`,
+    star: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>`,
+    starFilled: `<svg viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>`,
+    trash: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>`,
+    archive: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect width="20" height="5" x="2" y="3" rx="1"/><path d="M4 8v11a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8"/><path d="M10 12h4"/></svg>`,
+    unarchive: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect width="20" height="5" x="2" y="3" rx="1"/><path d="M4 8v11a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8"/><path d="M12 17v-6"/><path d="m9 14 3-3 3 3"/></svg>`,
+    bookmark: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16z"/></svg>`,
+    trophy: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"/></svg>`,
+    scale: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="m16 16 3-8 3 8c-.87.65-1.92 1-3 1s-2.13-.35-3-1Z"/><path d="m2 16 3-8 3 8c-.87.65-1.92 1-3 1s-2.13-.35-3-1Z"/><path d="M7 21h10"/><path d="M12 3v18"/><path d="M3 7h2c2 0 5-1 7-2 2 1 5 2 7 2h2"/></svg>`,
+    sort: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="m3 16 4 4 4-4"/><path d="M7 20V4"/><path d="m21 8-4-4-4 4"/><path d="M17 4v16"/></svg>`,
+    compare: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M15 3h4a2 2 0 0 1 2 2v11a2 2 0 0 1-2 2h-4"/><line x1="12" y1="2" x2="12" y2="22"/></svg>`,
+    save: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>`,
+    sliders: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><line x1="4" x2="4" y1="21" y2="14"/><line x1="4" x2="4" y1="10" y2="3"/><line x1="12" x2="12" y1="21" y2="12"/><line x1="12" x2="12" y1="8" y2="3"/><line x1="20" x2="20" y1="21" y2="16"/><line x1="20" x2="20" y1="12" y2="3"/><line x1="2" x2="6" y1="14" y2="14"/><line x1="10" x2="14" y1="8" y2="8"/><line x1="18" x2="22" y1="16" y2="16"/></svg>`,
+    droplet: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"/></svg>`,
+    thermometer: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M14 4v10.54a4 4 0 1 1-4 0V4a2 2 0 0 1 4 0Z"/></svg>`,
+    clock: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>`,
+    bean: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="12" rx="7" ry="10" transform="rotate(30 12 12)"/><path d="M15.5 5.5c-2.5 3-1 6-3.5 9s-1 4.5-3.5 5"/></svg>`,
+    dripper: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M5 4h14l-4.5 9h-5L5 4z"/><path d="M8 17h8"/><path d="M12 13v7"/></svg>`,
+    cloud: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z"/></svg>`,
+    refresh: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16"/><path d="M16 16h5v5"/></svg>`
+  };
+
+  function setBtnIcon(btn, iconKey, label, fullTitle, iconOnly = false) {
+    if (!btn || !UI_ICONS[iconKey]) return;
+    const key = [iconKey, label, fullTitle, iconOnly ? '1' : '0', document.documentElement.lang].join('|');
+    const hasContent = iconOnly ? Boolean(btn.querySelector('svg')) : Boolean(btn.querySelector('.cv-btn-content'));
+    if (btn.dataset.cvIconKey === key && hasContent) return;
+    btn.dataset.cvIconKey = key;
+    btn.setAttribute('data-coffee-user-text', 'true');
+    btn.title = fullTitle;
+    btn.setAttribute('aria-label', fullTitle);
+    btn.classList.toggle('cv-icon-only', iconOnly);
+    btn.innerHTML = iconOnly
+      ? UI_ICONS[iconKey]
+      : `<span class="cv-btn-content">${UI_ICONS[iconKey]}<span>${esc(label)}</span></span>`;
   }
 
   // =========================================================================
@@ -943,21 +1055,113 @@
     const txt = desc ? (desc.textContent || '') : '';
 
     let nextDotClass = 'cv-sync-dot';
-    let nextLabel = '';
+    let iconKey = 'cloud';
+    let nextText = '';
     if (state === 'synced' || txt.includes('已同步') || txt.includes('已連結') || txt.includes('Synced')) {
       nextDotClass = 'cv-sync-dot online';
-      nextLabel = L('☁️ 雲端已同步', '☁️ Cloud Synced');
+      nextText = L('已同步', 'Synced');
     } else if (state === 'syncing' || txt.includes('正在同步') || txt.includes('Syncing')) {
       nextDotClass = 'cv-sync-dot online';
-      nextLabel = L('🔄 同步中...', '🔄 Syncing...');
+      iconKey = 'refresh';
+      nextText = L('同步中', 'Syncing');
     } else if (state === 'offline' || state === 'error') {
       nextDotClass = 'cv-sync-dot warn';
-      nextLabel = L('☁️ 離線待同步', '☁️ Offline');
+      nextText = L('離線', 'Offline');
     } else {
-      nextLabel = L('☁️ 登入雲端同步', '☁️ Cloud Sync');
+      nextText = L('雲端登入', 'Cloud Sync');
     }
+    const syncKey = `${nextDotClass}|${iconKey}|${nextText}`;
     if (dot.className !== nextDotClass) dot.className = nextDotClass;
-    if (label.textContent !== nextLabel) label.textContent = nextLabel;
+    if (label.dataset.cvSyncKey !== syncKey) {
+      label.dataset.cvSyncKey = syncKey;
+      label.innerHTML = `<span class="cv-btn-content">${UI_ICONS[iconKey]}<span>${esc(nextText)}</span></span>`;
+    }
+  }
+
+  function enhanceCompactButtons() {
+    const en = isEn();
+    const byId = id => document.getElementById(id);
+
+    setBtnIcon(byId('add'), 'plus', en ? 'Pour-over' : '手沖', en ? 'New pour-over' : '新手沖');
+    setBtnIcon(byId('aero'), 'plus', en ? 'AeroPress' : '愛樂壓', en ? 'New AeroPress' : '新愛樂壓');
+    setBtnIcon(byId('copy'), 'copy', en ? 'Copy' : '複製', en ? 'Copy recipe' : '複製配方');
+
+    const favBtn = byId('fav');
+    if (favBtn) {
+      const rec = (typeof db !== 'undefined' && typeof selected !== 'undefined' && Array.isArray(db.recipes))
+        ? db.recipes.find(x => x.id === selected)
+        : null;
+      const rawFav = favBtn.textContent || '';
+      const isFav = rec ? !!rec.favorite : (rawFav.includes('★') || /Saved|已收藏/i.test(rawFav));
+      setBtnIcon(favBtn, isFav ? 'starFilled' : 'star', isFav ? (en ? 'Saved' : '已收藏') : (en ? 'Save' : '收藏'), en ? 'Toggle favorite' : '收藏配方');
+    }
+
+    setBtnIcon(byId('openChampionLibraryStudio'), 'trophy', en ? 'Champions' : '專家配方', en ? 'Browse expert recipes' : '挑選名家與世界賽配方');
+    setBtnIcon(byId('openChampionLibraryGuide'), 'trophy', en ? 'Champions' : '專家配方', en ? 'Browse expert recipes' : '挑選名家與世界賽配方');
+    setBtnIcon(byId('saveRecipe'), 'save', en ? 'Save' : '儲存', en ? 'Save recipe' : '儲存配方');
+    const delRec = byId('deleteRecipe');
+    if (delRec) {
+      delRec.classList.add('cv-icon-danger');
+      setBtnIcon(delRec, 'trash', '', en ? 'Delete recipe' : '刪除配方', true);
+    }
+
+    setBtnIcon(byId('compare'), 'compare', en ? 'Compare' : '比較', en ? 'Compare two cups' : '比較兩杯');
+    const sortBtn = byId('logSortToggle');
+    if (sortBtn) {
+      if (!sortBtn.querySelector('.cv-btn-content')) {
+        const rawSort = sortBtn.textContent || '';
+        sortBtn.dataset.cvSortAsc = /舊\s*→\s*新|Oldest/i.test(rawSort) ? '1' : '0';
+      }
+      const isAsc = sortBtn.dataset.cvSortAsc === '1';
+      setBtnIcon(
+        sortBtn,
+        'sort',
+        isAsc ? (en ? 'Oldest' : '舊→新') : (en ? 'Newest' : '新→舊'),
+        isAsc ? (en ? 'Sort: Oldest first' : '時間：舊 → 新') : (en ? 'Sort: Newest first' : '時間：新 → 舊')
+      );
+    }
+    setBtnIcon(byId('addCupEntry'), 'plus', en ? 'Log brew' : '補記', en ? 'Log past brew' : '補記沖煮紀錄');
+
+    const flowPrep = byId('flowPrepare');
+    if (flowPrep) {
+      for (const b of flowPrep.querySelectorAll('button')) {
+        if (b.id === 'flowBegin' || b.id === 'openChampionLibraryGuide') continue;
+        if (b.classList.contains('ws-scale-prep-btn')) {
+          setBtnIcon(b, 'scale', en ? 'Scale water' : '縮放水量', en ? 'Scale water to dose' : '依粉量等比例縮放水量');
+          continue;
+        }
+        const txt = (b.dataset.cvOrigText || b.textContent || '').trim();
+        if (!b.dataset.cvOrigText && txt) b.dataset.cvOrigText = txt;
+        if (/拍豆袋|Scan coffee/i.test(txt)) setBtnIcon(b, 'camera', en ? 'Scan' : '拍豆袋', en ? 'Scan coffee bag' : '拍豆袋新增');
+        else if (/新增咖啡豆|Add coffee/i.test(txt)) setBtnIcon(b, 'plus', en ? 'Add' : '新增豆', en ? 'Add coffee' : '新增咖啡豆');
+        else if (/器材|equipment/i.test(txt)) setBtnIcon(b, 'sliders', en ? 'Gear' : '器材', en ? 'Manage / add equipment' : '管理／新增器材');
+      }
+
+      const metricIcons = ['scale', 'droplet', 'thermometer', 'clock'];
+      flowPrep.querySelectorAll('.flow-metric').forEach((box, idx) => {
+        const span = box.querySelector(':scope > span');
+        const iconKey = metricIcons[idx];
+        if (!span || !iconKey) return;
+        const labelTxt = (span.dataset.cvOrigText || span.textContent || '').trim();
+        if (!span.dataset.cvOrigText && labelTxt) span.dataset.cvOrigText = labelTxt;
+        const mKey = `${iconKey}|${labelTxt}|${en ? 'en' : 'zh'}`;
+        if (span.dataset.cvMetricKey === mKey && span.querySelector('svg')) return;
+        span.dataset.cvMetricKey = mKey;
+        span.classList.add('cv-metric-label');
+        span.innerHTML = `${UI_ICONS[iconKey]}<span>${esc(labelTxt)}</span>`;
+      });
+    }
+
+    const ws = byId('coffeeWorkspace');
+    const beanPanel = ws && ws.querySelector(':scope > div:nth-of-type(2)');
+    if (beanPanel) {
+      for (const b of beanPanel.querySelectorAll(':scope > button')) {
+        const txt = (b.dataset.cvOrigText || b.textContent || '').trim();
+        if (!b.dataset.cvOrigText && txt) b.dataset.cvOrigText = txt;
+        if (/拍豆袋|Scan coffee/i.test(txt)) setBtnIcon(b, 'camera', en ? 'Scan' : '拍豆袋', en ? 'Scan coffee bag' : '拍豆袋新增');
+        else if (/新增咖啡豆|Add coffee/i.test(txt)) setBtnIcon(b, 'plus', en ? 'Add' : '新增豆', en ? 'Add coffee' : '新增咖啡豆');
+      }
+    }
   }
 
   // =========================================================================
@@ -1379,24 +1583,95 @@
     const searchInput = document.getElementById('search');
     const q = (searchInput ? searchInput.value : '').trim().toLowerCase();
     const list = db.cups.filter(c => JSON.stringify(c).toLowerCase().includes(q));
+    const en = isEn();
+    const langKey = document.documentElement.lang;
 
     Array.from(entriesRoot.children).forEach((card, idx) => {
-      const cup = list[idx];
+      const cup = card.dataset.cupId ? db.cups.find(c => c.id === card.dataset.cupId) : list[idx];
       if (!cup) return;
-      let radarBox = card.querySelector('.cv-radar-box');
-      if (radarBox) {
-        if (radarBox.dataset.lang === document.documentElement.lang) return;
-        radarBox.remove();
-      }
-      radarBox = document.createElement('div');
-      radarBox.className = 'cv-radar-box';
-      radarBox.dataset.lang = document.documentElement.lang;
-      radarBox.setAttribute('data-coffee-user-text', 'true');
-      radarBox.innerHTML = buildRadarSvg(cup) + buildFlavorBarsHtml(cup);
 
-      const detailsEl = card.querySelector('details');
-      if (detailsEl) detailsEl.before(radarBox);
-      else card.append(radarBox);
+      // 1. 以精簡 SVG 參數膠囊取代純文字參數段
+      let rawInfoP = card.querySelector('p.cv-raw-hidden');
+      const smallEl = card.querySelector('small');
+      if (!rawInfoP && smallEl && smallEl.nextElementSibling && smallEl.nextElementSibling.tagName === 'P' && !smallEl.nextElementSibling.hasAttribute('data-coffee-user-text')) {
+        rawInfoP = smallEl.nextElementSibling;
+        rawInfoP.classList.add('cv-raw-hidden');
+      }
+      let chipsRow = card.querySelector('.cv-cup-chips');
+      if (!chipsRow || chipsRow.dataset.lang !== langKey) {
+        if (chipsRow) chipsRow.remove();
+        chipsRow = document.createElement('div');
+        chipsRow.className = 'cv-cup-chips';
+        chipsRow.dataset.lang = langKey;
+        chipsRow.setAttribute('data-coffee-user-text', 'true');
+        const r = cup.recipe || {};
+        const sum = typeof m === 'function' ? m(r) : { water: 0 };
+        const dur = typeof fmt === 'function' ? fmt((Number(cup.seconds) || 0) * 1000) : `${cup.seconds || 0}s`;
+        const chips = [];
+        if (r.bean) chips.push(`<span class="cv-chip">${UI_ICONS.bean}<span>${esc(r.bean)}</span></span>`);
+        if (r.dripper || r.method) chips.push(`<span class="cv-chip">${UI_ICONS.dripper}<span>${esc(r.dripper || r.method)}</span></span>`);
+        chips.push(`<span class="cv-chip cv-mono">${UI_ICONS.scale}<span>${esc(r.dose)}g</span></span>`);
+        chips.push(`<span class="cv-chip cv-mono">${UI_ICONS.droplet}<span>${esc(sum.water)}g</span></span>`);
+        chips.push(`<span class="cv-chip cv-mono">${UI_ICONS.thermometer}<span>${esc(r.temp)}°C</span></span>`);
+        chips.push(`<span class="cv-chip cv-mono">${UI_ICONS.clock}<span>${esc(dur)}</span></span>`);
+        chips.push(`<span class="cv-chip accent cv-mono">${UI_ICONS.starFilled}<span>${esc(cup.rating)}/5 · ${esc(cup.strength)}</span></span>`);
+        chipsRow.innerHTML = chips.join('');
+        if (smallEl) smallEl.after(chipsRow);
+        else card.prepend(chipsRow);
+      }
+
+      // 2. 雷達圖與五格評分條
+      let radarBox = card.querySelector('.cv-radar-box');
+      if (!radarBox || radarBox.dataset.lang !== langKey) {
+        if (radarBox) radarBox.remove();
+        radarBox = document.createElement('div');
+        radarBox.className = 'cv-radar-box';
+        radarBox.dataset.lang = langKey;
+        radarBox.setAttribute('data-coffee-user-text', 'true');
+        radarBox.innerHTML = buildRadarSvg(cup) + buildFlavorBarsHtml(cup);
+        const detailsEl = card.querySelector('details');
+        if (detailsEl) detailsEl.before(radarBox);
+        else card.append(radarBox);
+      }
+
+      // 3. 整合操作按鈕為同一排 SVG 圖示化工具列
+      let actionRow = card.querySelector('.cv-card-actions');
+      if (!actionRow || actionRow.dataset.lang !== langKey) {
+        if (!actionRow) {
+          actionRow = document.createElement('div');
+          actionRow.className = 'cv-card-actions';
+          actionRow.setAttribute('data-coffee-user-text', 'true');
+        }
+        actionRow.dataset.lang = langKey;
+        const bar = card.querySelector('.ws-cup-bar');
+        const directDel = Array.from(card.children).find(el => el.tagName === 'BUTTON');
+        if (bar) {
+          for (const b of Array.from(bar.querySelectorAll('button'))) {
+            const orig = (b.dataset.cvOrigText || b.textContent || '').trim();
+            if (!b.dataset.cvOrigText && orig) b.dataset.cvOrigText = orig;
+            if (/編輯|Edit/i.test(orig)) setBtnIcon(b, 'edit', en ? 'Edit' : '編輯', en ? 'Edit entry' : '編輯紀錄');
+            else if (/分享|Share/i.test(orig)) setBtnIcon(b, 'share', en ? 'Share' : '分享', en ? 'Share card' : '產生分享卡');
+            else if (/另存|Save as/i.test(orig)) setBtnIcon(b, 'bookmark', en ? 'Save' : '另存', en ? 'Save as recipe' : '另存為配方');
+            actionRow.append(b);
+          }
+          bar.remove();
+        } else {
+          for (const b of actionRow.querySelectorAll('button')) {
+            const orig = (b.dataset.cvOrigText || '').trim();
+            if (/編輯|Edit/i.test(orig)) setBtnIcon(b, 'edit', en ? 'Edit' : '編輯', en ? 'Edit entry' : '編輯紀錄');
+            else if (/分享|Share/i.test(orig)) setBtnIcon(b, 'share', en ? 'Share' : '分享', en ? 'Share card' : '產生分享卡');
+            else if (/另存|Save as/i.test(orig)) setBtnIcon(b, 'bookmark', en ? 'Save' : '另存', en ? 'Save as recipe' : '另存為配方');
+            else if (b.classList.contains('cv-icon-danger')) setBtnIcon(b, 'trash', '', en ? 'Delete entry' : '刪除紀錄', true);
+          }
+        }
+        if (directDel) {
+          directDel.dataset.cvOrigText = directDel.textContent || '';
+          directDel.classList.add('cv-icon-danger');
+          setBtnIcon(directDel, 'trash', '', en ? 'Delete entry' : '刪除紀錄', true);
+          actionRow.append(directDel);
+        }
+        card.append(actionRow);
+      }
     });
   }
 
@@ -1405,21 +1680,46 @@
     if (!ws || typeof db === 'undefined' || !db.beanCatalog || !Array.isArray(db.beanCatalog.items)) return;
     const beanPanel = ws.querySelector(':scope > div:nth-of-type(2)');
     if (!beanPanel) return;
+    const en = isEn();
+    const langKey = document.documentElement.lang;
     const beanBoxes = Array.from(beanPanel.querySelectorAll(':scope > article.box'));
     const beans = db.beanCatalog.items;
     beanBoxes.forEach((box, idx) => {
       const b = beans[idx];
-      if (!b || box.querySelector('.cv-bean-roast-row')) return;
-      const dots = roastDotsCount(b.roast);
-      if (dots <= 0) return;
-      let dotsHtml = '';
-      for (let i = 1; i <= 5; i++) dotsHtml += `<span class="cv-roast-dot ${i <= dots ? 'filled' : ''}"></span>`;
-      const row = document.createElement('div');
-      row.className = 'cv-bean-roast-row cv-badges-row';
-      row.setAttribute('data-coffee-user-text', 'true');
-      row.innerHTML = `<span class="cv-chip"><span class="cv-roast-dots">${dotsHtml}</span><span>${esc(b.roast)}</span></span>`;
-      const metaP = box.querySelector('p');
-      if (metaP) metaP.after(row);
+      if (!b) return;
+      if (!box.querySelector('.cv-bean-roast-row')) {
+        const dots = roastDotsCount(b.roast);
+        if (dots > 0) {
+          let dotsHtml = '';
+          for (let i = 1; i <= 5; i++) dotsHtml += `<span class="cv-roast-dot ${i <= dots ? 'filled' : ''}"></span>`;
+          const row = document.createElement('div');
+          row.className = 'cv-bean-roast-row cv-badges-row';
+          row.setAttribute('data-coffee-user-text', 'true');
+          row.innerHTML = `<span class="cv-chip"><span class="cv-roast-dots">${dotsHtml}</span><span>${esc(b.roast)}</span></span>`;
+          const metaP = box.querySelector('p');
+          if (metaP) metaP.after(row);
+        }
+      }
+      let actionRow = box.querySelector('.cv-card-actions');
+      if (!actionRow || actionRow.dataset.lang !== langKey) {
+        if (!actionRow) {
+          actionRow = document.createElement('div');
+          actionRow.className = 'cv-card-actions';
+          actionRow.setAttribute('data-coffee-user-text', 'true');
+          for (const btn of Array.from(box.querySelectorAll(':scope > button'))) {
+            btn.dataset.cvOrigText = (btn.textContent || '').trim();
+            actionRow.append(btn);
+          }
+          box.append(actionRow);
+        }
+        actionRow.dataset.lang = langKey;
+        for (const btn of actionRow.querySelectorAll('button')) {
+          const orig = (btn.dataset.cvOrigText || btn.textContent || '').trim();
+          if (/編輯|Edit/i.test(orig)) setBtnIcon(btn, 'edit', en ? 'Edit' : '編輯', en ? 'Edit coffee' : '編輯咖啡豆');
+          else if (/啟用|Activate/i.test(orig)) setBtnIcon(btn, 'unarchive', '', en ? 'Activate' : '啟用咖啡豆', true);
+          else if (/封存|Archive/i.test(orig)) setBtnIcon(btn, 'archive', '', en ? 'Archive' : '封存咖啡豆', true);
+        }
+      }
     });
   }
 
@@ -1455,6 +1755,7 @@
   function initVisualUI() {
     ensureHeaderLayout();
     updateSyncPill();
+    enhanceCompactButtons();
     renderRecipeWaterChart();
     renderActiveBrewGauge();
     enhanceJournalEntries();
@@ -1465,6 +1766,7 @@
       const origLogs = window.logs;
       const wrappedLogs = function (...args) {
         const res = origLogs.apply(this, args);
+        enhanceCompactButtons();
         enhanceJournalEntries();
         enhanceBeanCatalogDots();
         return res;
@@ -1506,7 +1808,10 @@
 
     const wsBeanPanel = document.querySelector('#coffeeWorkspace > div:nth-of-type(2)');
     if (wsBeanPanel) {
-      new MutationObserver(() => enhanceBeanCatalogDots()).observe(wsBeanPanel, { childList: true });
+      new MutationObserver(() => {
+        enhanceCompactButtons();
+        enhanceBeanCatalogDots();
+      }).observe(wsBeanPanel, { childList: true });
     }
 
     let lastLang = document.documentElement.lang;
@@ -1514,9 +1819,11 @@
       if (document.documentElement.lang !== lastLang) {
         lastLang = document.documentElement.lang;
         updateSyncPill();
+        enhanceCompactButtons();
         renderRecipeWaterChart();
         renderActiveBrewGauge();
         enhanceJournalEntries();
+        enhanceBeanCatalogDots();
         if (document.querySelector('#comparison .cv-compare-radar')) enhanceComparisonRadar();
       }
     }).observe(document.documentElement, { attributes: true, attributeFilter: ['lang'] });
@@ -1524,6 +1831,7 @@
     // 高效定期同步圖表與雲端燈號（非沖煮狀態下完全不重建 DOM）
     setInterval(() => {
       updateSyncPill();
+      enhanceCompactButtons();
       renderRecipeWaterChart();
       renderActiveBrewGauge();
     }, 250);
