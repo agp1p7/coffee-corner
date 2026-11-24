@@ -902,6 +902,19 @@
     return { brewWater, totalSec, postWater, postIce, pours, totalInput };
   }
 
+  function fmtScaledNum(val, factor) {
+    const n = Math.round(Number(val) * factor * 10) / 10;
+    return Number.isInteger(n) ? String(n) : String(n);
+  }
+
+  function scaleGramText(text, factor) {
+    if (typeof text !== 'string' || !text || !Number.isFinite(factor) || Math.abs(factor - 1) < 1e-6) return text;
+    return text.replace(
+      /(\d+(?:\.\d+)?(?:\s*\/\s*\d+(?:\.\d+)?)+|\d+(?:\.\d+)?\s*[–\-~～]\s*\d+(?:\.\d+)?|\d+(?:\.\d+)?)(\s*g)(?![A-Za-z/／])/g,
+      (match, nums, unit) => nums.replace(/\d+(?:\.\d+)?/g, n => fmtScaledNum(n, factor)) + unit
+    );
+  }
+
   function scaleRecipeToDose(recipe, targetDose) {
     if (!targetDose || !Number.isFinite(targetDose) || targetDose <= 0) return recipe;
     const nextDose = Math.min(200, Math.max(0.1, Math.round(targetDose * 10) / 10));
@@ -910,10 +923,16 @@
 
     const scaled = copy(recipe);
     scaled.dose = nextDose;
+    if (typeof scaled.notes === 'string' && scaled.notes) {
+      scaled.notes = scaleGramText(scaled.notes, factor).slice(0, 3000);
+    }
     scaled.steps = scaled.steps.map(s => {
       const next = { ...s };
       if (POUR_SET.has(next.type) || MANUAL_SET.has(next.type)) {
         next.water = Math.min(3000, round1(next.water * factor));
+      }
+      if (typeof next.note === 'string' && next.note) {
+        next.note = scaleGramText(next.note, factor).slice(0, 1000);
       }
       return next;
     });
@@ -928,17 +947,21 @@
 
     const tasteMode = options.tasteMode || 'balance';
     const strengthMode = options.strengthMode || 'standard';
+    const factor = targetDose / tpl.dose;
+    const isDoseScaled = Math.abs(factor - 1) > 1e-6;
 
     let steps = copy(tpl.steps);
     if (tpl.custom46) {
-      const totalWater = Math.min(10000, round1(tpl.baseTotalWater * (targetDose / tpl.dose)));
+      const totalWater = Math.min(10000, round1(tpl.baseTotalWater * factor));
       steps = buildTetsu46Steps(totalWater, tasteMode, strengthMode, lang);
-    } else if (Math.abs(targetDose - tpl.dose) > 1e-6) {
-      const factor = targetDose / tpl.dose;
+    } else if (isDoseScaled) {
       steps = steps.map(s => {
         const next = { ...s };
         if (POUR_SET.has(next.type) || MANUAL_SET.has(next.type)) {
           next.water = Math.min(3000, round1(next.water * factor));
+        }
+        if (typeof next.note === 'string' && next.note) {
+          next.note = scaleGramText(next.note, factor).slice(0, 1000);
         }
         return next;
       });
@@ -954,6 +977,8 @@
         : { light: '清爽', standard: '標準', strong: '濃郁' };
       suffix = ` (${tMap[tasteMode]}·${sMap[strengthMode]})`;
     }
+
+    const scaledNotes = isDoseScaled ? scaleGramText(String(tpl.notes || ''), factor) : String(tpl.notes || '');
 
     const r = {
       id: newId(),
@@ -980,14 +1005,17 @@
       roast: tpl.roast || '未填',
       roastDate: '',
       openDate: '',
-      notes: String(tpl.notes || '').slice(0, 3000),
+      notes: scaledNotes.slice(0, 3000),
       steps
     };
     return r;
   }
 
+  if (typeof window !== 'undefined') {
+    window.CoffeeScaleGramText = scaleGramText;
+  }
   if (typeof module !== 'undefined' && module.exports) {
-    module.exports = { CHAMPIONS, buildTetsu46Steps, buildRecipeFromTemplate, scaleRecipeToDose, recipeSums };
+    module.exports = { CHAMPIONS, buildTetsu46Steps, buildRecipeFromTemplate, scaleRecipeToDose, scaleGramText, recipeSums };
   }
 
   if (typeof document === 'undefined' || document.getElementById('coffeeChampionDialog')) return;
@@ -1006,19 +1034,20 @@
         align-items: center;
         justify-content: center;
         gap: 6px;
-        background: rgba(255, 255, 255, 0.1) !important;
-        border: 1.5px solid rgba(255, 255, 255, 0.45) !important;
-        color: #ffffff !important;
+        background: rgba(226, 168, 99, 0.13) !important;
+        border: 1.5px solid rgba(226, 168, 99, 0.42) !important;
+        color: #f3cfa0 !important;
         font-weight: 600 !important;
         border-radius: 13px !important;
         padding: 9px 14px !important;
         min-height: 44px;
-        transition: background 0.16s ease, border-color 0.16s ease, color 0.16s ease;
+        transition: background 0.16s ease, border-color 0.16s ease, color 0.16s ease, box-shadow 0.16s ease;
       }
       .champ-trigger-btn:hover {
-        background: #ffffff !important;
-        color: #000000 !important;
-        border-color: #ffffff !important;
+        background: linear-gradient(135deg, #e7b26f, #d3944b) !important;
+        color: #140e09 !important;
+        border-color: #e7b26f !important;
+        box-shadow: 0 4px 16px rgba(226, 168, 99, 0.25);
       }
       #openChampionLibraryGuide {
         display: flex;
@@ -1030,11 +1059,12 @@
         width: min(920px, calc(100% - 24px)) !important;
         max-width: calc(100% - 24px) !important;
         max-height: 90vh;
-        background: #0a0a0a !important;
-        border: 1px solid rgba(255, 255, 255, 0.2) !important;
+        background: linear-gradient(180deg, #181411 0%, #110e0c 100%) !important;
+        border: 1px solid rgba(245, 222, 195, 0.16) !important;
         border-radius: 20px !important;
         padding: 18px !important;
-        color: #f4f4f5 !important;
+        color: #f5efe6 !important;
+        box-shadow: 0 24px 60px rgba(0, 0, 0, 0.78);
       }
       .champ-head {
         display: flex;
@@ -1044,7 +1074,7 @@
         gap: 10px;
         margin-bottom: 12px;
         padding-bottom: 10px;
-        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        border-bottom: 1px solid rgba(245, 222, 195, 0.1);
       }
       .champ-head > div {
         min-width: 0;
@@ -1061,7 +1091,7 @@
       .champ-head h2 {
         margin: 0;
         font-size: 1.25rem;
-        color: #ffffff;
+        color: #f5efe6;
       }
       .champ-controls {
         display: grid;
@@ -1080,19 +1110,20 @@
         padding: 5px 12px !important;
         font-size: 13.5px !important;
         border-radius: 999px !important;
-        background: #161616 !important;
-        border: 1px solid rgba(255, 255, 255, 0.14) !important;
-        color: #d4d4d8 !important;
+        background: #211b17 !important;
+        border: 1px solid rgba(245, 222, 195, 0.14) !important;
+        color: #d6cbbd !important;
       }
       .champ-pill[aria-pressed="true"] {
-        background: #ffffff !important;
-        color: #000000 !important;
-        border-color: #ffffff !important;
+        background: linear-gradient(135deg, #e7b26f, #d3944b) !important;
+        color: #140e09 !important;
+        border-color: #e7b26f !important;
         font-weight: 700 !important;
+        box-shadow: 0 2px 10px rgba(226, 168, 99, 0.22);
       }
       .champ-dose-wrap {
-        background: #121212;
-        border: 1px solid rgba(255, 255, 255, 0.12);
+        background: #1c1714;
+        border: 1px solid rgba(245, 222, 195, 0.12);
         border-radius: 14px;
         padding: 10px 14px;
         display: flex;
@@ -1159,8 +1190,8 @@
         }
       }
       .champ-card {
-        background: #141414;
-        border: 1px solid rgba(255, 255, 255, 0.14);
+        background: #1f1a17;
+        border: 1px solid rgba(245, 222, 195, 0.12);
         border-radius: 16px;
         padding: 16px;
         display: flex;
@@ -1177,20 +1208,20 @@
       .champ-badge {
         display: inline-block;
         font-size: 12px;
-        padding: 3px 9px;
+        padding: 3px 10px;
         border-radius: 999px;
-        background: #ffffff;
-        color: #000000;
+        background: linear-gradient(135deg, #e7b26f, #d3944b);
+        color: #140e09;
         font-weight: 700;
       }
       .champ-barista {
         font-size: 13px;
-        color: #a1a1aa;
+        color: #b5a899;
       }
       .champ-title {
         margin: 0;
         font-size: 1.08rem;
-        color: #ffffff;
+        color: #f5efe6;
         font-weight: 600;
       }
       .champ-meta {
@@ -1202,25 +1233,25 @@
         font-size: 12px;
         padding: 3px 8px;
         border-radius: 8px;
-        background: rgba(255, 255, 255, 0.06);
-        border: 1px solid rgba(255, 255, 255, 0.1);
-        color: #e4e4e7;
+        background: rgba(245, 222, 195, 0.06);
+        border: 1px solid rgba(245, 222, 195, 0.12);
+        color: #e6dccf;
         font-family: 'JetBrains Mono', 'Noto Sans TC', monospace;
       }
       .champ-chip.scaled {
-        background: rgba(255, 255, 255, 0.14);
-        border-color: rgba(255, 255, 255, 0.35);
-        color: #ffffff;
+        background: rgba(226, 168, 99, 0.16);
+        border-color: rgba(226, 168, 99, 0.42);
+        color: #f7d8af;
       }
       .champ-desc {
         margin: 0;
         font-size: 13.5px;
         line-height: 1.55;
-        color: #d4d4d8;
+        color: #cfc5b8;
       }
       .champ-46-box {
-        background: #0d0d0d;
-        border: 1px solid rgba(255, 255, 255, 0.16);
+        background: #171310;
+        border: 1px solid rgba(245, 222, 195, 0.14);
         border-radius: 12px;
         padding: 10px;
         display: grid;
@@ -1233,25 +1264,25 @@
       }
       .champ-46-label {
         font-size: 12px;
-        color: #a1a1aa;
+        color: #b5a899;
       }
       .champ-steps-details {
-        background: #0d0d0d;
-        border: 1px solid rgba(255, 255, 255, 0.1);
+        background: #171310;
+        border: 1px solid rgba(245, 222, 195, 0.1);
         border-radius: 12px;
         padding: 8px 12px;
       }
       .champ-steps-details summary {
         font-size: 13.5px !important;
         margin: 0 !important;
-        color: #e4e4e7;
+        color: #e6dccf;
       }
       .champ-step-list {
         margin: 8px 0 0;
         padding-left: 18px;
         font-size: 13px;
         line-height: 1.6;
-        color: #d4d4d8;
+        color: #cfc5b8;
       }
       .champ-actions {
         display: flex;
@@ -1263,9 +1294,9 @@
       .champ-btn-primary {
         flex: 1 1 100%;
         margin: 0 !important;
-        background: #ffffff !important;
-        color: #000000 !important;
-        border-color: #ffffff !important;
+        background: linear-gradient(135deg, #e7b26f, #d3944b) !important;
+        color: #140e09 !important;
+        border-color: #e7b26f !important;
         font-weight: 700 !important;
       }
       .champ-btn-sec {
@@ -1279,8 +1310,8 @@
       }
       .champ-card-clickable:hover,
       .champ-card-clickable:focus-visible {
-        border-color: rgba(255, 255, 255, 0.5) !important;
-        background: #1b1b1b;
+        border-color: rgba(226, 168, 99, 0.45) !important;
+        background: #251f1b;
         outline: none;
       }
       .champ-desc-clamp {
@@ -1294,7 +1325,7 @@
         padding-top: 4px;
         font-size: 13px;
         font-weight: 600;
-        color: #ffffff;
+        color: #e2a863;
         text-align: right;
       }
       .champ-detail {
@@ -1307,7 +1338,7 @@
         justify-content: space-between;
         gap: 10px;
         padding-bottom: 10px;
-        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        border-bottom: 1px solid rgba(245, 222, 195, 0.1);
       }
       .champ-detail-nav button {
         margin: 0 !important;
@@ -1321,8 +1352,8 @@
         gap: 8px;
       }
       .champ-metric {
-        background: #161616;
-        border: 1px solid rgba(255, 255, 255, 0.12);
+        background: #1f1a17;
+        border: 1px solid rgba(245, 222, 195, 0.12);
         border-radius: 12px;
         padding: 10px 8px;
         text-align: center;
@@ -1330,14 +1361,14 @@
       .champ-metric span {
         display: block;
         font-size: 12px;
-        color: #a1a1aa;
+        color: #b5a899;
       }
       .champ-metric strong {
         display: block;
         margin-top: 4px;
         font-size: 18px;
         font-family: 'JetBrains Mono', monospace;
-        color: #ffffff;
+        color: #f3cfa0;
       }
       @media (max-width: 520px) {
         .champ-metrics {
@@ -1345,15 +1376,15 @@
         }
       }
       .champ-detail-box {
-        background: #141414;
-        border: 1px solid rgba(255, 255, 255, 0.12);
+        background: #1a1512;
+        border: 1px solid rgba(245, 222, 195, 0.11);
         border-radius: 14px;
         padding: 12px 14px;
       }
       .champ-detail-box h4 {
         margin: 0 0 8px;
         font-size: 14.5px;
-        color: #ffffff;
+        color: #f3cfa0;
       }
       .champ-detail-steps {
         margin: 0;
@@ -1363,8 +1394,8 @@
         gap: 8px;
       }
       .champ-detail-step {
-        background: #1a1a1a;
-        border: 1px solid rgba(255, 255, 255, 0.08);
+        background: #231d19;
+        border: 1px solid rgba(245, 222, 195, 0.08);
         border-radius: 10px;
         padding: 10px 12px;
         font-size: 13.5px;
@@ -1376,16 +1407,16 @@
         justify-content: space-between;
         gap: 6px;
         font-weight: 600;
-        color: #ffffff;
+        color: #f5efe6;
         margin-bottom: 3px;
       }
       .champ-detail-step-time {
         font-family: 'JetBrains Mono', monospace;
         font-size: 12.5px;
-        color: #a1a1aa;
+        color: #e2a863;
       }
       .champ-detail-step-note {
-        color: #d4d4d8;
+        color: #d6cbbd;
         font-size: 13px;
       }
     `;
@@ -1576,7 +1607,8 @@
     h2.textContent = en ? tpl.titleEn : tpl.title;
     const summaryP = document.createElement('p');
     summaryP.className = 'champ-desc';
-    summaryP.textContent = en ? tpl.summaryEn : tpl.summary;
+    const rawSummary = en ? tpl.summaryEn : tpl.summary;
+    summaryP.textContent = isScaled ? scaleGramText(rawSummary, built.dose / tpl.dose) : rawSummary;
     wrap.append(top, h2, summaryP);
 
     // 4-tile Core Metrics Grid

@@ -34,28 +34,43 @@
       --font-brand: 'Iansui', '芫荽', serif;
       --font-ui: 'Noto Sans TC', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
       --font-mono: 'JetBrains Mono', ui-monospace, 'SF Mono', Consolas, monospace;
-      --oled-bg: #000000;
-      --oled-card: #111111;
-      --oled-subcard: #181818;
-      --oled-input: #1d1d1d;
-      --oled-border: rgba(255, 255, 255, 0.14);
-      --oled-border-subtle: rgba(255, 255, 255, 0.08);
+      --oled-bg: #0c0a09;
+      --oled-card: #161311;
+      --oled-subcard: #1f1a17;
+      --oled-input: #26201c;
+      --accent: #e2a863;
+      --accent-hover: #ecc088;
+      --accent-ink: #140e09;
+      --accent-soft: rgba(226, 168, 99, 0.14);
+      --accent-border: rgba(226, 168, 99, 0.36);
+      --text-main: #f5efe6;
+      --text-muted: #b5a899;
+      --text-dim: #8a7e72;
+      --oled-border: rgba(245, 222, 195, 0.12);
+      --oled-border-subtle: rgba(245, 222, 195, 0.07);
     }
 
     body {
       background-color: var(--oled-bg) !important;
-      color: #f4f4f5 !important;
+      background-image: radial-gradient(ellipse 80% 35% at 50% -8%, rgba(217, 155, 82, 0.11), transparent 72%) !important;
+      color: var(--text-main) !important;
       font-family: var(--font-ui) !important;
       font-size: 16.5px !important;
       line-height: 1.65;
       max-width: 1240px !important;
       padding: 16px 20px 60px !important;
+      -webkit-font-smoothing: antialiased;
     }
 
     /* 第一層：品牌與人文標題、風味筆記維持芫荽 (Iansui) */
     h1, h2, h3, #taste, #notes, .font-brand, #flowPrepare h3:nth-of-type(2), #coffeeGuideRecipe {
       font-family: var(--font-brand) !important;
       letter-spacing: 0.03em;
+    }
+
+    h2 {
+      color: var(--text-main);
+      margin-top: 4px;
     }
 
     /* 第三層：精密儀表數據與輸入數字採 JetBrains Mono 等寬對齊 */
@@ -72,7 +87,7 @@
       min-height: 22px !important;
       padding: 0 !important;
       border-radius: 6px !important;
-      accent-color: #ffffff;
+      accent-color: var(--accent);
       cursor: pointer;
       flex-shrink: 0;
       vertical-align: middle;
@@ -99,18 +114,18 @@
       width: 46px;
       height: 46px;
       border-radius: 14px;
-      background: #141414;
-      border: 1px solid rgba(255, 255, 255, 0.22);
+      background: linear-gradient(145deg, #251d17, #16120f);
+      border: 1px solid var(--accent-border);
       display: flex;
       align-items: center;
       justify-content: center;
       flex-shrink: 0;
-      box-shadow: 0 4px 16px rgba(255, 255, 255, 0.04);
+      box-shadow: 0 4px 18px rgba(226, 168, 99, 0.12);
     }
     .cv-brand-logo svg {
       width: 26px;
       height: 26px;
-      stroke: #ffffff;
+      stroke: var(--accent);
     }
     .cv-brand-title {
       min-width: 0;
@@ -119,7 +134,7 @@
       margin: 0 !important;
       font-size: clamp(1.5rem, 4vw, 2.05rem) !important;
       line-height: 1.2;
-      color: #ffffff;
+      color: var(--text-main);
     }
     .cv-brand-meta {
       display: flex;
@@ -133,7 +148,7 @@
       display: inline !important;
       margin: 0 !important;
       font-size: 13px !important;
-      color: #a1a1aa !important;
+      color: var(--text-muted) !important;
       line-height: 1.4 !important;
     }
     .cv-header-actions {
@@ -150,29 +165,29 @@
       gap: 7px;
       padding: 6px 14px !important;
       border-radius: 999px !important;
-      background: #141414 !important;
+      background: #1b1613 !important;
       border: 1px solid var(--oled-border) !important;
       font-size: 13px !important;
-      color: #e4e4e7 !important;
+      color: var(--text-main) !important;
       cursor: pointer;
       min-height: 38px !important;
       margin: 0 !important;
       white-space: nowrap;
     }
     html body button.cv-sync-pill:hover {
-      border-color: rgba(255, 255, 255, 0.45) !important;
-      background: #1e1e1e !important;
+      border-color: var(--accent-border) !important;
+      background: #251f1a !important;
     }
     .cv-sync-dot {
       width: 7px;
       height: 7px;
       border-radius: 50%;
-      background: #71717a;
+      background: var(--text-dim);
       flex-shrink: 0;
     }
     .cv-sync-dot.online {
-      background: #ffffff;
-      box-shadow: 0 0 8px rgba(255, 255, 255, 0.85);
+      background: #6ee7b7;
+      box-shadow: 0 0 8px rgba(110, 231, 183, 0.7);
     }
     .cv-sync-dot.warn {
       background: #fbbf24;
@@ -191,7 +206,7 @@
       gap: 4px !important;
       padding: 3px;
       border-radius: 999px;
-      background: #121212;
+      background: #181411;
       border: 1px solid var(--oled-border);
       margin: 0 !important;
     }
@@ -204,31 +219,31 @@
       border-radius: 999px !important;
       border: 1px solid transparent !important;
       background: transparent !important;
-      color: #a1a1aa !important;
+      color: var(--text-muted) !important;
       margin: 0 !important;
       white-space: nowrap;
     }
     html body #coffeeLanguageSwitch button:hover:not([aria-pressed="true"]) {
-      background: rgba(255, 255, 255, 0.08) !important;
-      color: #ffffff !important;
+      background: rgba(245, 222, 195, 0.08) !important;
+      color: var(--text-main) !important;
     }
 
-    /* 懸浮毛玻璃膠囊導覽列 (OLED Pill Nav) + 高權重防覆寫 */
+    /* 懸浮毛玻璃膠囊導覽列 (Espresso Pill Nav) */
     nav {
-      background: rgba(16, 16, 16, 0.9) !important;
+      background: rgba(22, 19, 17, 0.92) !important;
       backdrop-filter: blur(16px);
       -webkit-backdrop-filter: blur(16px);
-      border: 1px solid rgba(255, 255, 255, 0.14) !important;
+      border: 1px solid var(--oled-border) !important;
       border-radius: 18px !important;
       padding: 6px !important;
       margin: 8px 0 22px !important;
       gap: 6px !important;
-      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.65);
+      box-shadow: 0 12px 32px rgba(0, 0, 0, 0.6);
     }
     html body nav button {
       border: 1px solid transparent !important;
       background: transparent !important;
-      color: #a1a1aa !important;
+      color: var(--text-muted) !important;
       border-radius: 13px !important;
       font-weight: 500;
       font-size: 15px !important;
@@ -238,20 +253,20 @@
       transition: background 0.16s ease, color 0.16s ease, border-color 0.16s ease;
     }
     html body nav button:hover:not(.coffee-current-tab):not([aria-current="page"]) {
-      color: #ffffff !important;
-      background: rgba(255, 255, 255, 0.08) !important;
-      border-color: rgba(255, 255, 255, 0.16) !important;
+      color: var(--text-main) !important;
+      background: rgba(245, 222, 195, 0.08) !important;
+      border-color: rgba(245, 222, 195, 0.14) !important;
     }
     html body nav button.coffee-current-tab,
     html body nav button.coffee-current-tab:hover,
     html body nav button.coffee-current-tab:focus-visible,
     html body nav button[aria-current="page"],
     html body nav button[aria-current="page"]:hover {
-      background: #ffffff !important;
-      color: #000000 !important;
-      border-color: #ffffff !important;
-      font-weight: 600 !important;
-      box-shadow: 0 2px 14px rgba(255, 255, 255, 0.22) !important;
+      background: linear-gradient(135deg, #e7b26f, #d3944b) !important;
+      color: var(--accent-ink) !important;
+      border-color: #e7b26f !important;
+      font-weight: 700 !important;
+      box-shadow: 0 4px 16px rgba(226, 168, 99, 0.28) !important;
     }
     nav button::before {
       content: "";
@@ -375,17 +390,17 @@
       }
     }
 
-    /* OLED 卡片與次級容器階層 */
+    /* 暖深色吧台卡片與次級容器階層 */
     .card, .flow-timeline, dialog {
-      background: var(--oled-card) !important;
+      background: linear-gradient(180deg, #1b1714 0%, #14110f 100%) !important;
       border: 1px solid var(--oled-border) !important;
       border-radius: 22px !important;
       padding: 22px !important;
-      color: #f4f4f5 !important;
-      box-shadow: 0 12px 36px rgba(0, 0, 0, 0.55);
+      color: var(--text-main) !important;
+      box-shadow: 0 14px 40px rgba(0, 0, 0, 0.6), inset 0 1px 0 rgba(245, 222, 195, 0.05);
     }
     dialog::backdrop {
-      background: rgba(0, 0, 0, 0.82) !important;
+      background: rgba(6, 4, 3, 0.84) !important;
       backdrop-filter: blur(8px);
       -webkit-backdrop-filter: blur(8px);
     }
@@ -400,9 +415,39 @@
       align-items: center;
     }
     .flow-step.current, .live {
-      background: #1f1f1f !important;
-      border: 1.5px solid #ffffff !important;
-      box-shadow: 0 0 24px rgba(255, 255, 255, 0.08);
+      background: linear-gradient(135deg, #2b2119, #211913) !important;
+      border: 1.5px solid var(--accent) !important;
+      box-shadow: 0 0 24px rgba(226, 168, 99, 0.14);
+    }
+    .flow-metrics {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 8px;
+      margin: 10px 0;
+    }
+    @media (max-width: 520px) {
+      .flow-metrics {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+    }
+    .flow-metric {
+      background: #231d19 !important;
+      border: 1px solid var(--oled-border) !important;
+      border-radius: 12px;
+      padding: 10px 8px;
+      text-align: center;
+    }
+    .flow-metric span {
+      display: block;
+      font-size: 12px;
+      color: var(--text-muted);
+    }
+    .flow-metric strong {
+      display: block;
+      margin-top: 2px;
+      font-size: 17px;
+      font-family: var(--font-mono);
+      color: var(--accent);
     }
     .cv-step-badge {
       display: inline-flex;
@@ -411,50 +456,78 @@
       width: 28px;
       height: 28px;
       border-radius: 9px;
-      background: rgba(255, 255, 255, 0.06);
-      border: 1px solid rgba(255, 255, 255, 0.1);
-      color: #d4d4d8;
+      background: rgba(226, 168, 99, 0.1);
+      border: 1px solid rgba(226, 168, 99, 0.22);
+      color: #f3cfa0;
       flex-shrink: 0;
     }
 
     /* 表單輸入減噪與高觸控圓角 */
     input:not([type="checkbox"]), select, textarea {
       background: var(--oled-input) !important;
-      border: 1px solid rgba(255, 255, 255, 0.16) !important;
+      border: 1px solid rgba(245, 222, 195, 0.15) !important;
       border-radius: 12px !important;
       padding: 10px 13px !important;
-      color: #ffffff !important;
+      color: var(--text-main) !important;
       transition: border-color 0.15s, box-shadow 0.15s;
     }
     input:not([type="checkbox"]):focus, select:focus, textarea:focus {
-      border-color: #ffffff !important;
-      box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.14);
+      border-color: var(--accent) !important;
+      box-shadow: 0 0 0 3px rgba(226, 168, 99, 0.2);
       outline: none !important;
     }
     label {
-      color: #a1a1aa !important;
+      color: var(--text-muted) !important;
       font-size: 14px !important;
       font-weight: 500;
     }
+    .hint, small {
+      color: var(--text-muted) !important;
+    }
 
-    /* 一般按鈕質感升級 */
+    /* 四級按鈕階層系統：一般 / 特色琥珀 / 危險 / 主 CTA */
     button {
-      background: #1a1a1a !important;
-      border: 1px solid rgba(255, 255, 255, 0.18) !important;
+      background: #231d19 !important;
+      border: 1px solid rgba(245, 222, 195, 0.16) !important;
       border-radius: 13px !important;
-      color: #f4f4f5 !important;
+      color: var(--text-main) !important;
       font-weight: 500;
-      transition: transform 0.1s ease, background 0.15s ease, border-color 0.15s ease;
+      transition: transform 0.1s ease, background 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
     }
     button:hover:not(:disabled) {
-      background: #262626 !important;
-      border-color: rgba(255, 255, 255, 0.38) !important;
+      background: #2e2620 !important;
+      border-color: rgba(245, 222, 195, 0.34) !important;
     }
     button:active:not(:disabled) {
       transform: scale(0.985);
     }
 
-    /* 主白色 CTA 按鈕與選中狀態（高權重鎖定白底黑字，Hover 絕不黑化） */
+    /* 第二級特色按鈕（拍豆袋／補記／專家庫） */
+    html body #addCupEntry,
+    html body .bean-scan-btn {
+      background: var(--accent-soft) !important;
+      border-color: var(--accent-border) !important;
+      color: #f3cfa0 !important;
+      font-weight: 600 !important;
+    }
+    html body #addCupEntry:hover:not(:disabled),
+    html body .bean-scan-btn:hover:not(:disabled) {
+      background: rgba(226, 168, 99, 0.24) !important;
+      border-color: var(--accent) !important;
+    }
+
+    /* 危險按鈕 */
+    html body #deleteRecipe {
+      background: rgba(248, 113, 113, 0.1) !important;
+      border-color: rgba(248, 113, 113, 0.3) !important;
+      color: #fca5a5 !important;
+    }
+    html body #deleteRecipe:hover:not(:disabled) {
+      background: rgba(248, 113, 113, 0.2) !important;
+      border-color: rgba(248, 113, 113, 0.5) !important;
+    }
+
+    /* 第一級主 CTA 按鈕（焦糖琥珀金＋深焙黑字） */
     html body #coffeeEnterGuide,
     html body #flowBegin,
     html body .flow-primary,
@@ -463,10 +536,11 @@
     html body #btnGoogleLogin,
     html body .workspace-tabs button[aria-pressed="true"],
     html body #coffeeLanguageSwitch button[aria-pressed="true"] {
-      background: #ffffff !important;
-      color: #000000 !important;
-      border-color: #ffffff !important;
-      font-weight: 600 !important;
+      background: linear-gradient(135deg, #e7b26f, #d3944b) !important;
+      color: var(--accent-ink) !important;
+      border-color: #e7b26f !important;
+      font-weight: 700 !important;
+      box-shadow: 0 4px 14px rgba(226, 168, 99, 0.24);
     }
     html body #coffeeEnterGuide:hover:not(:disabled),
     html body #flowBegin:hover:not(:disabled),
@@ -476,25 +550,25 @@
     html body #btnGoogleLogin:hover:not(:disabled),
     html body .workspace-tabs button[aria-pressed="true"]:hover:not(:disabled),
     html body #coffeeLanguageSwitch button[aria-pressed="true"]:hover:not(:disabled) {
-      background: #e4e4e7 !important;
-      color: #000000 !important;
-      border-color: #ffffff !important;
+      background: linear-gradient(135deg, #f0c082, #df9f57) !important;
+      color: var(--accent-ink) !important;
+      border-color: #f0c082 !important;
     }
 
-    /* Toast 與復原鈕高對比 */
+    /* Toast 與復原鈕 */
     #toast {
-      background: #ffffff !important;
-      color: #000000 !important;
+      background: linear-gradient(135deg, #f3cfa0, #e2a863) !important;
+      color: var(--accent-ink) !important;
       border: 1px solid rgba(255, 255, 255, 0.25);
       border-radius: 14px !important;
       padding: 12px 16px !important;
-      font-weight: 500;
+      font-weight: 600;
       box-shadow: 0 12px 36px rgba(0, 0, 0, 0.85);
     }
     html body #toast button {
-      background: #111111 !important;
-      color: #ffffff !important;
-      border-color: #111111 !important;
+      background: #1b1613 !important;
+      color: var(--text-main) !important;
+      border-color: #1b1613 !important;
       padding: 6px 12px !important;
       min-height: 36px !important;
       margin: 0 0 0 10px !important;
@@ -502,7 +576,7 @@
 
     /* 折疊區塊 Details 視覺化 */
     details {
-      background: rgba(255, 255, 255, 0.02);
+      background: rgba(245, 222, 195, 0.025);
       border: 1px solid var(--oled-border-subtle);
       border-radius: 16px;
       padding: 6px 16px;
@@ -510,28 +584,29 @@
     }
     details[open] {
       padding-bottom: 16px;
-      background: rgba(255, 255, 255, 0.03);
+      background: rgba(245, 222, 195, 0.04);
+      border-color: var(--oled-border);
     }
     summary {
       font-family: var(--font-brand) !important;
       font-size: 19px !important;
       margin: 8px 0 !important;
-      color: #ffffff;
+      color: #f3cfa0;
     }
 
     footer#storageStatus {
       margin-top: 28px;
       padding-top: 16px;
       border-top: 1px solid var(--oled-border-subtle);
-      color: #71717a;
+      color: var(--text-dim);
       font-size: 13px;
       text-align: center;
     }
 
     /* ================= 視覺化元件專用樣式 ================= */
     .cv-chart-card {
-      background: #151515;
-      border: 1px solid rgba(255, 255, 255, 0.12);
+      background: #1a1512;
+      border: 1px solid var(--oled-border);
       border-radius: 18px;
       padding: 18px;
       margin: 16px 0;
@@ -547,10 +622,13 @@
     .cv-chart-title {
       font-family: var(--font-brand);
       font-size: 17px;
-      color: #ffffff;
+      color: var(--text-main);
       display: flex;
       align-items: center;
       gap: 8px;
+    }
+    .cv-chart-title svg {
+      stroke: var(--accent);
     }
     .cv-badges-row {
       display: flex;
@@ -564,10 +642,10 @@
       gap: 6px;
       padding: 5px 11px;
       border-radius: 999px;
-      background: #222222;
-      border: 1px solid rgba(255, 255, 255, 0.12);
+      background: #241e1a;
+      border: 1px solid var(--oled-border);
       font-size: 12.5px;
-      color: #e4e4e7;
+      color: #e6dccf;
     }
     .cv-roast-dots {
       display: inline-flex;
@@ -578,18 +656,18 @@
       width: 7px;
       height: 7px;
       border-radius: 50%;
-      border: 1px solid #ffffff;
+      border: 1px solid var(--accent);
     }
     .cv-roast-dot.filled {
-      background: #ffffff;
+      background: var(--accent);
     }
 
     /* 2. 引導沖煮：雙軌圓環儀表與分段比例進度條 */
     .cv-brew-visual {
       margin: 10px 0 16px;
       padding: 16px;
-      background: #151515;
-      border: 1px solid rgba(255, 255, 255, 0.14);
+      background: #1a1512;
+      border: 1px solid var(--oled-border);
       border-radius: 20px;
     }
     .cv-prop-bar {
@@ -597,7 +675,7 @@
       gap: 5px;
       height: 10px;
       padding: 2px;
-      background: #09090b;
+      background: #100d0b;
       border-radius: 999px;
       margin-bottom: 16px;
       overflow: hidden;
@@ -605,17 +683,17 @@
     .cv-prop-seg {
       height: 100%;
       border-radius: 999px;
-      background: #27272a;
+      background: #2f2722;
       transition: background 0.25s ease;
     }
     .cv-prop-seg.manual {
-      background: repeating-linear-gradient(45deg, #27272a, #27272a 4px, #3f3f46 4px, #3f3f46 8px);
+      background: repeating-linear-gradient(45deg, #2f2722, #2f2722 4px, #443931 4px, #443931 8px);
     }
     .cv-prop-seg.done {
-      background: #ffffff;
+      background: var(--accent);
     }
     .cv-prop-seg.active {
-      background: #ffffff;
+      background: #f5d39e;
       animation: cvPulse 1.4s infinite ease-in-out;
     }
     @keyframes cvPulse {
@@ -654,26 +732,29 @@
       margin-top: 8px;
     }
     .cv-telemetry-cell {
-      background: #1f1f1f;
-      border: 1px solid rgba(255, 255, 255, 0.1);
+      background: #231d19;
+      border: 1px solid var(--oled-border);
       border-radius: 14px;
       padding: 10px 8px;
       text-align: center;
     }
     .cv-telemetry-cell.highlight {
-      border-color: rgba(255, 255, 255, 0.5);
-      background: #242424;
+      border-color: var(--accent-border);
+      background: rgba(226, 168, 99, 0.12);
     }
     .cv-telemetry-label {
       font-size: 12px;
-      color: #a1a1aa;
+      color: var(--text-muted);
     }
     .cv-telemetry-val {
       font-family: var(--font-mono);
       font-size: clamp(1.1rem, 3vw, 1.45rem);
       font-weight: 700;
-      color: #ffffff;
+      color: var(--text-main);
       margin-top: 2px;
+    }
+    .cv-telemetry-cell.highlight .cv-telemetry-val {
+      color: #f5d39e;
     }
 
     /* 3. 五角風味雷達圖與五格量尺 */
@@ -682,8 +763,8 @@
       grid-template-columns: 150px minmax(0, 1fr);
       gap: 16px;
       align-items: center;
-      background: #121212;
-      border: 1px solid rgba(255, 255, 255, 0.1);
+      background: #171310;
+      border: 1px solid var(--oled-border);
       border-radius: 14px;
       padding: 12px 14px;
       margin: 12px 0;
@@ -714,14 +795,14 @@
       width: 18px;
       height: 6px;
       border-radius: 3px;
-      background: #27272a;
+      background: #2f2722;
     }
     .cv-bar-seg.on {
-      background: #ffffff;
+      background: var(--accent);
     }
     .cv-radar-note {
       font-size: 11.5px;
-      color: #71717a;
+      color: var(--text-dim);
       margin-top: 4px;
     }
   `;
@@ -973,9 +1054,9 @@
       const showLabel = isLast || (x - lastLabelX >= 36);
       if (showLabel) lastLabelX = x;
       const labelHtml = showLabel
-        ? `<text x="${x.toFixed(1)}" y="${(y - 8).toFixed(1)}" fill="#e4e4e7" font-size="9.5" text-anchor="middle" font-family="monospace">${Math.round(py * 10) / 10}g</text>`
+        ? `<text x="${x.toFixed(1)}" y="${(y - 8).toFixed(1)}" fill="#f3cfa0" font-size="9.5" text-anchor="middle" font-family="monospace">${Math.round(py * 10) / 10}g</text>`
         : '';
-      return `<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="3.5" fill="#ffffff"/>${labelHtml}`;
+      return `<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="3.5" fill="#e2a863"/>${labelHtml}`;
     }).join('');
 
     const roastCount = roastDotsCount(r.roast);
@@ -1003,19 +1084,19 @@
         </div>
         <span class="cv-mono" style="font-size:12.5px;color:#a1a1aa">${summary.water}g / ${t}s · ${ratioStr}</span>
       </div>
-      <svg viewBox="0 0 ${W} ${H}" style="width:100%;height:auto;display:block;background:#101010;border-radius:12px;padding:2px">
-        <line x1="${padL}" y1="${padT}" x2="${W - padR}" y2="${padT}" stroke="#27272a" stroke-dasharray="3 3"/>
-        <line x1="${padL}" y1="${(padT + plotH / 2).toFixed(1)}" x2="${W - padR}" y2="${(padT + plotH / 2).toFixed(1)}" stroke="#27272a" stroke-dasharray="3 3"/>
-        <line x1="${padL}" y1="${padT + plotH}" x2="${W - padR}" y2="${padT + plotH}" stroke="#52525b"/>
-        <text x="${padL - 6}" y="${padT + 4}" fill="#888" font-size="9.5" text-anchor="end" font-family="monospace">${Math.round(maxW)}g</text>
-        <text x="${padL - 6}" y="${(padT + plotH / 2 + 3).toFixed(1)}" fill="#888" font-size="9.5" text-anchor="end" font-family="monospace">${Math.round(maxW / 2)}g</text>
-        <text x="${padL - 6}" y="${padT + plotH + 3}" fill="#888" font-size="9.5" text-anchor="end" font-family="monospace">0g</text>
-        <polygon points="${areaPoints}" fill="rgba(255,255,255,0.08)"/>
-        <polyline points="${polyPoints}" fill="none" stroke="#ffffff" stroke-width="2.4" stroke-linejoin="round" stroke-linecap="round"/>
+      <svg viewBox="0 0 ${W} ${H}" style="width:100%;height:auto;display:block;background:#120f0d;border-radius:12px;padding:2px">
+        <line x1="${padL}" y1="${padT}" x2="${W - padR}" y2="${padT}" stroke="#312822" stroke-dasharray="3 3"/>
+        <line x1="${padL}" y1="${(padT + plotH / 2).toFixed(1)}" x2="${W - padR}" y2="${(padT + plotH / 2).toFixed(1)}" stroke="#312822" stroke-dasharray="3 3"/>
+        <line x1="${padL}" y1="${padT + plotH}" x2="${W - padR}" y2="${padT + plotH}" stroke="#605145"/>
+        <text x="${padL - 6}" y="${padT + 4}" fill="#9c8e7f" font-size="9.5" text-anchor="end" font-family="monospace">${Math.round(maxW)}g</text>
+        <text x="${padL - 6}" y="${(padT + plotH / 2 + 3).toFixed(1)}" fill="#9c8e7f" font-size="9.5" text-anchor="end" font-family="monospace">${Math.round(maxW / 2)}g</text>
+        <text x="${padL - 6}" y="${padT + plotH + 3}" fill="#9c8e7f" font-size="9.5" text-anchor="end" font-family="monospace">0g</text>
+        <polygon points="${areaPoints}" fill="rgba(226,168,99,0.14)"/>
+        <polyline points="${polyPoints}" fill="none" stroke="#e2a863" stroke-width="2.4" stroke-linejoin="round" stroke-linecap="round"/>
         ${dots}
-        <text x="${padL}" y="${H - 6}" fill="#888" font-size="9.5" text-anchor="start" font-family="monospace">0:00</text>
-        <text x="${(padL + plotW / 2).toFixed(1)}" y="${H - 6}" fill="#888" font-size="9.5" text-anchor="middle" font-family="monospace">${fmt(maxT * 500)}</text>
-        <text x="${W - padR}" y="${H - 6}" fill="#888" font-size="9.5" text-anchor="end" font-family="monospace">${fmt(maxT * 1000)}</text>
+        <text x="${padL}" y="${H - 6}" fill="#9c8e7f" font-size="9.5" text-anchor="start" font-family="monospace">0:00</text>
+        <text x="${(padL + plotW / 2).toFixed(1)}" y="${H - 6}" fill="#9c8e7f" font-size="9.5" text-anchor="middle" font-family="monospace">${fmt(maxT * 500)}</text>
+        <text x="${W - padR}" y="${H - 6}" fill="#9c8e7f" font-size="9.5" text-anchor="end" font-family="monospace">${fmt(maxT * 1000)}</text>
       </svg>
       <div class="cv-badges-row">
         <span class="cv-chip">
@@ -1158,15 +1239,15 @@
         <div class="cv-prop-bar">${segsHtml}</div>
         <div class="cv-gauge-wrap">
           <svg class="cv-gauge-svg" viewBox="0 0 120 120">
-            <circle cx="60" cy="60" r="54" fill="none" stroke="#262626" stroke-width="5"/>
-            <circle id="cvOuterArc" cx="60" cy="60" r="54" fill="none" stroke="#ffffff" stroke-width="5" stroke-dasharray="${outerCirc}" stroke-dashoffset="${outerOffset}" stroke-linecap="round"/>
-            <circle cx="60" cy="60" r="44" fill="none" stroke="#1f1f1f" stroke-width="3" stroke-dasharray="4 3"/>
-            <circle id="cvInnerArc" cx="60" cy="60" r="44" fill="none" stroke="${isManStep ? '#ffffff' : '#a1a1aa'}" stroke-width="3" stroke-dasharray="${isManStep ? '6 4' : innerCirc}" stroke-dashoffset="${isManStep ? '0' : innerOffset}" stroke-linecap="round"/>
+            <circle cx="60" cy="60" r="54" fill="none" stroke="#2d2520" stroke-width="5"/>
+            <circle id="cvOuterArc" cx="60" cy="60" r="54" fill="none" stroke="#e2a863" stroke-width="5" stroke-dasharray="${outerCirc}" stroke-dashoffset="${outerOffset}" stroke-linecap="round"/>
+            <circle cx="60" cy="60" r="44" fill="none" stroke="#241e19" stroke-width="3" stroke-dasharray="4 3"/>
+            <circle id="cvInnerArc" cx="60" cy="60" r="44" fill="none" stroke="${isManStep ? '#f5d39e' : '#b5a899'}" stroke-width="3" stroke-dasharray="${isManStep ? '6 4' : innerCirc}" stroke-dashoffset="${isManStep ? '0' : innerOffset}" stroke-linecap="round"/>
           </svg>
           <div class="cv-gauge-center">
-            <div style="color:#d4d4d8;margin-bottom:2px">${getActionSvg(curStep.type)}</div>
-            <div id="cvGaugeTime" class="cv-mono" style="font-size:${isManStep ? '24px' : '32px'};font-weight:700;color:#fff;line-height:1.15">${centerTimeText}</div>
-            <div id="cvGaugeSub" class="cv-mono" style="font-size:11.5px;color:#a1a1aa;margin-top:3px">${centerSubText}</div>
+            <div style="color:#e2a863;margin-bottom:2px">${getActionSvg(curStep.type)}</div>
+            <div id="cvGaugeTime" class="cv-mono" style="font-size:${isManStep ? '24px' : '32px'};font-weight:700;color:#f5efe6;line-height:1.15">${centerTimeText}</div>
+            <div id="cvGaugeSub" class="cv-mono" style="font-size:11.5px;color:#b5a899;margin-top:3px">${centerSubText}</div>
           </div>
         </div>
         <div class="cv-telemetry-grid">
@@ -1234,14 +1315,14 @@
 
     const rings = [1, 3, 5].map(level => {
       const pts = axes.map((_, i) => pt(i, level)).join(' ');
-      return `<polygon points="${pts}" fill="none" stroke="${level === 5 ? '#3f3f46' : '#27272a'}" stroke-width="1"/>`;
+      return `<polygon points="${pts}" fill="none" stroke="${level === 5 ? '#493c33' : '#312822'}" stroke-width="1"/>`;
     }).join('');
 
     const spokes = axes.map((a, i) => {
       const end = pt(i, 5);
       const labelPos = pt(i, 6.35).split(',');
-      return `<line x1="${cx}" y1="${cy}" x2="${end.split(',')[0]}" y2="${end.split(',')[1]}" stroke="#27272a" stroke-width="1"/>
-              <text x="${labelPos[0]}" y="${Number(labelPos[1]) + 3.5}" fill="#d4d4d8" font-size="10" text-anchor="middle">${a.label}</text>`;
+      return `<line x1="${cx}" y1="${cy}" x2="${end.split(',')[0]}" y2="${end.split(',')[1]}" stroke="#312822" stroke-width="1"/>
+              <text x="${labelPos[0]}" y="${Number(labelPos[1]) + 3.5}" fill="#d6cbbd" font-size="10" text-anchor="middle">${a.label}</text>`;
     }).join('');
 
     const polyA = axes.map((a, i) => pt(i, getVal(cupA, a.key))).join(' ');
@@ -1249,18 +1330,18 @@
       const val = getVal(cupA, a.key);
       if (val <= 0) return '';
       const [px, py] = pt(i, val).split(',');
-      return `<circle cx="${px}" cy="${py}" r="2.8" fill="#ffffff"/>`;
+      return `<circle cx="${px}" cy="${py}" r="2.8" fill="#e2a863"/>`;
     }).join('');
 
     let polyBHtml = '';
     if (cupB) {
       const polyB = axes.map((a, i) => pt(i, getVal(cupB, a.key))).join(' ');
-      polyBHtml = `<polygon points="${polyB}" fill="rgba(255,255,255,0.05)" stroke="#a1a1aa" stroke-width="1.6" stroke-dasharray="4 3"/>`;
+      polyBHtml = `<polygon points="${polyB}" fill="rgba(245,239,230,0.08)" stroke="#b5a899" stroke-width="1.6" stroke-dasharray="4 3"/>`;
     }
 
     return `<svg width="${size}" height="${size}" viewBox="0 0 150 150" style="display:block;margin:0 auto">
       ${rings}${spokes}${polyBHtml}
-      <polygon points="${polyA}" fill="rgba(255,255,255,0.18)" stroke="#ffffff" stroke-width="2"/>
+      <polygon points="${polyA}" fill="rgba(226,168,99,0.24)" stroke="#e2a863" stroke-width="2"/>
       ${dotsA}
     </svg>`;
   }

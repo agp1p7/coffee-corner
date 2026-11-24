@@ -78,4 +78,33 @@ test('all 24 recipes pass dose scaling for 12g, 15g, 18g, 20g, 25g', () => {
   }
 });
 
+test('scaleGramText scales gram amounts while preserving flow rate, temperature, ratios, and grind dial', () => {
+  const input = '20g 粉對 300g 水（1:15）；約 6–7g/s、60/60/50/100g，range 60–70g，93°C，C5 Pro 刻度 13.5–15，15.5 g 參考';
+  const out = Champs.scaleGramText(input, 0.75);
+  assert.ok(out.includes('15g 粉對 225g 水（1:15）'), out);
+  assert.ok(out.includes('6–7g/s'), out);
+  assert.ok(out.includes('45/45/37.5/75g'), out);
+  assert.ok(out.includes('45–52.5g'), out);
+  assert.ok(out.includes('93°C'), out);
+  assert.ok(out.includes('C5 Pro 刻度 13.5–15'), out);
+  assert.ok(out.includes('11.6 g'), out);
+});
+
+test('buildRecipeFromTemplate scales step notes and recipe notes on dose change', () => {
+  const matt = Champs.CHAMPIONS.find(c => c.id === 'matt-winton-2021');
+  const mattScaled = Champs.buildRecipeFromTemplate(matt, { targetDose: 15 });
+  assert.equal(mattScaled.dose, 15);
+  assert.ok(mattScaled.steps[0].note.includes('45g') && !mattScaled.steps[0].note.includes('60g'), mattScaled.steps[0].note);
+  assert.ok(mattScaled.steps[1].note.includes('90g') && !mattScaled.steps[1].note.includes('120g'), mattScaled.steps[1].note);
+  assert.ok(mattScaled.notes.includes('15g') && mattScaled.notes.includes('225g') && mattScaled.notes.includes('93°C') && mattScaled.notes.includes('88°C'), mattScaled.notes);
+
+  const devil = Champs.CHAMPIONS.find(c => c.id === 'tetsu-devil');
+  assert.ok(devil);
+  const devilScaled = Champs.buildRecipeFromTemplate(devil, { targetDose: 15 });
+  assert.equal(devilScaled.dose, 15);
+  assert.ok(devilScaled.steps[0].note.includes('45g'), devilScaled.steps[0].note);
+  assert.ok(devilScaled.steps[3].note.includes('120g') && devilScaled.steps[3].note.includes('210g'), devilScaled.steps[3].note);
+  assert.ok(devilScaled.notes.includes('90g') && devilScaled.notes.includes('210g') && devilScaled.notes.includes('90°C') && devilScaled.notes.includes('70°C'), devilScaled.notes);
+});
+
 console.log(JSON.stringify({ passed, failed: 0 }));
