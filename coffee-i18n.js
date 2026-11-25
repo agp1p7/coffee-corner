@@ -207,8 +207,8 @@ TDS需測量；成品重與TDS須屬同一份無未融冰、混合均勻的飲�
 填每段新增水量。悶蒸算注水；兩次注水間有非加水步驟算一次斷水，末段滴濾不算。後加量不計入萃取水；手動步驟需確認完成。|Enter water added per step. Blooming counts as a pour. Non-pouring steps between pours count as one planned pause; final drawdown does not. Post additions are separate from brew water; confirm manual steps when done.
 重設不刪配方，8 秒內可復原；停注且之後還會注水時可記一次實際斷水。|Reset keeps your recipe (8 s undo). Log a pause when you stop pouring and will pour again.
 資料保存在此瀏覽器，建議定期匯出 JSON 備份；匯入 JSON 會覆蓋現有資料。|Data stays in this browser. Export a JSON backup regularly; importing JSON replaces existing data.
-關於與字型說明|About & font info
-全介面固定使用 Iansui 字型（由 Google Fonts 載入）。計時暫停不會停止咖啡萃取；背景或鎖屏可能延後提示音。|The UI uses the Iansui font via Google Fonts. Pausing the timer does not stop extraction; backgrounding or locking the screen may delay audio cues.
+使用說明|Usage notes
+計時暫停不會停止咖啡萃取；背景或鎖屏可能延後提示音。|Pausing the timer does not stop extraction; backgrounding or locking the screen may delay audio cues.
 風味紀錄|Tasting record`.split('\n').map(line=>line.split('|')));
 const scoreKeys=['acidity','sweetness','bitterness','body'];
 function tr(s){return D[s]||s;}
