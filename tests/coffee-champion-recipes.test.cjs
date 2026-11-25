@@ -33,15 +33,20 @@ function assertValidRecipe(r) {
   assert.ok(sum.water > 0 && sum.water <= 10000);
 }
 
-test('includes 24 curated master & champion recipes', () => {
-  assert.equal(Champs.CHAMPIONS.length, 24);
-  assert.equal(new Set(Champs.CHAMPIONS.map(c => c.id)).size, 24);
+test('includes 43 curated master & champion recipes', () => {
+  assert.equal(Champs.CHAMPIONS.length, 43);
+  assert.equal(new Set(Champs.CHAMPIONS.map(c => c.id)).size, 43);
+  const aeroCount = Champs.CHAMPIONS.filter(c => c.method === '愛樂壓').length;
+  const pourCount = Champs.CHAMPIONS.filter(c => c.method === '手沖' || c.method === '浸泡式').length;
+  assert.ok(aeroCount >= 12, 'expected >= 12 AeroPress recipes, got ' + aeroCount);
+  assert.ok(pourCount >= 30, 'expected >= 30 pour-over/hybrid recipes, got ' + pourCount);
 });
 
-test('all 24 built recipes pass strict schema and CoffeeSteps validation', () => {
+test('all 43 built recipes pass strict schema and CoffeeSteps validation', () => {
   for (const tpl of Champs.CHAMPIONS) {
     assert.ok(typeof tpl.grindGuide === 'string' && tpl.grindGuide.includes('C5 Pro') && !/C40/i.test(tpl.grindGuide), 'C5 Pro grindGuide present: ' + tpl.id);
     assert.ok(typeof tpl.grindGuideEn === 'string' && tpl.grindGuideEn.includes('C5 Pro') && !/C40/i.test(tpl.grindGuideEn), 'C5 Pro grindGuideEn present: ' + tpl.id);
+    assert.ok(Number.isFinite(tpl.grindMinUm) && Number.isFinite(tpl.grindMaxUm) && tpl.grindMinUm > 200 && tpl.grindMaxUm >= tpl.grindMinUm, 'valid micron range: ' + tpl.id);
     assert.ok(/研磨/.test(tpl.notes) && !/C40/i.test(tpl.notes), 'notes include C5 Pro grind guidance: ' + tpl.id);
     for (const lang of ['zh-Hant', 'en']) {
       const r = Champs.buildRecipeFromTemplate(tpl, { lang });
@@ -68,7 +73,7 @@ test('all 9 Tetsu 4:6 taste & strength combinations pass validation and preserve
   }
 });
 
-test('all 24 recipes pass dose scaling for 12g, 15g, 18g, 20g, 25g', () => {
+test('all 43 recipes pass dose scaling for 12g, 15g, 18g, 20g, 25g', () => {
   for (const tpl of Champs.CHAMPIONS) {
     for (const targetDose of [12, 15, 18, 20, 25]) {
       const r = Champs.buildRecipeFromTemplate(tpl, { targetDose });

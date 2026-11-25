@@ -1237,6 +1237,30 @@
     html body .champ-metric strong {
       color: var(--accent) !important;
     }
+    html body .champ-search-input,
+    html body .champ-grinder-select {
+      background: var(--surface) !important;
+      border: 1px solid var(--rule-strong) !important;
+      color: var(--ink) !important;
+      border-radius: 4px !important;
+    }
+    html body .champ-count-note,
+    html body .champ-empty {
+      color: var(--ink-2) !important;
+      border-color: var(--rule-strong) !important;
+    }
+    html body .cv-grinder-select {
+      font-family: 'JetBrains Mono', 'Noto Sans TC', monospace !important;
+      font-size: 11px !important;
+      min-height: 28px !important;
+      padding: 2px 8px !important;
+      border-radius: 3px !important;
+      background: var(--surface) !important;
+      border: 1px solid var(--rule-strong) !important;
+      color: var(--ink) !important;
+      width: auto !important;
+      max-width: 195px;
+    }
 
     td, th {
       border-bottom-color: var(--rule) !important;
@@ -1936,10 +1960,13 @@
       : [];
     const beanKey = beanItems.map(b => `${b.id}:${b.bean}`).join(',');
 
+    const grinderApi = typeof window !== 'undefined' ? window.CoffeeGrinderGuide : null;
+    const activeGrinderPref = grinderApi ? grinderApi.getPreferredGrinderId() : '';
+
     const key = JSON.stringify([
       r.id, r.name, r.method, r.dripper, r.shape, r.filter, r.grinder, r.grind,
       r.dose, r.temp, r.cold, r.ice, r.bean, r.roaster, r.roast, r.process, r.beanFlavor,
-      r.steps, recipeIds, beanKey, soundOn, syncTxt, document.documentElement.lang
+      r.steps, recipeIds, beanKey, soundOn, syncTxt, activeGrinderPref, document.documentElement.lang
     ]);
     if (!force && key === lastStudioKey) return;
     lastStudioKey = key;
@@ -2008,17 +2035,25 @@
     }
     axisMarks.push(fmtFn(axCumSec * 1000));
 
-    // 研磨推薦字串
+    // 研磨推薦字串 + 磨豆機換算切換
     const noteMatch = String(r.notes || '').match(/【推薦研磨】([^。\n]+)/);
+    const resolvedGrinderId = grinderApi ? grinderApi.resolveGrinderId(r) : 'timemore-c5-pro';
     const defaultGrind = r.grind
       ? `${r.grinder ? r.grinder + ' · ' : ''}${en ? 'Dial ' : '刻度 '}${r.grind}`
-      : noteMatch
-        ? noteMatch[1]
-        : r.method === '愛樂壓'
-          ? L('Timemore C5 Pro · 建議刻度 7.5–9.5', 'Timemore C5 Pro · Dial 7.5–9.5')
-          : r.shape === '平底'
-            ? L('Timemore C5 Pro · 建議刻度 12–13.5', 'Timemore C5 Pro · Dial 12–13.5')
-            : L('Timemore C5 Pro · 建議刻度 10.5–13', 'Timemore C5 Pro · Dial 10.5–13');
+      : grinderApi
+        ? grinderApi.formatGrindGuide(r, { lang: en ? 'en' : 'zh-Hant', grinderId: resolvedGrinderId })
+        : (r.grindGuide || r.grindGuideEn)
+          ? L(r.grindGuide || r.grindGuideEn, r.grindGuideEn || r.grindGuide)
+          : noteMatch
+            ? noteMatch[1]
+            : r.method === '愛樂壓'
+              ? L('Timemore C5 Pro · 建議刻度 10–12.2', 'Timemore C5 Pro · Dial 10–12.2')
+              : r.shape === '平底'
+                ? L('Timemore C5 Pro · 建議刻度 13.2–15', 'Timemore C5 Pro · Dial 13.2–15')
+                : L('Timemore C5 Pro · 建議刻度 12.1–14.2', 'Timemore C5 Pro · Dial 12.1–14.2');
+    const studioGrinderOptionsHtml = grinderApi
+      ? grinderApi.GRINDERS.map(g => `<option value="${esc(g.id)}" ${g.id === resolvedGrinderId ? 'selected' : ''}>${esc(g.shortName)}</option>`).join('')
+      : '';
 
     const sortedRecipes = (typeof db !== 'undefined' && Array.isArray(db.recipes))
       ? [...db.recipes].sort((a, b) => Number(!!b.favorite) - Number(!!a.favorite))
@@ -2091,7 +2126,10 @@
         <div style="display:flex;flex-direction:column;gap:6px;">
           <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;">
             <span class="cv-kicker">POUR PROFILE · ${esc(ratioStr)}</span>
-            <span class="cv-mono" style="font-size:11px;color:var(--ink-2);">${esc(defaultGrind)}</span>
+            <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;min-width:0;">
+              <span class="cv-mono" style="font-size:11px;color:var(--ink-2);">${esc(defaultGrind)}</span>
+              ${studioGrinderOptionsHtml ? `<select id="cvStudioGrinderSelect" class="cv-grinder-select" aria-label="${L('切換磨豆機換算', 'Switch grinder calibration')}">${studioGrinderOptionsHtml}</select>` : ''}
+            </div>
           </div>
           ${buildBlueprintCurveSvg(r, summary)}
           <div class="cv-mono" style="display:flex;justify-content:space-between;font-size:10.5px;color:var(--ink-3);gap:6px;">
@@ -2157,6 +2195,13 @@
           realSel.value = recSel.value;
           realSel.dispatchEvent(new Event('change'));
         }
+      };
+    }
+    const studioGrinderSel = document.getElementById('cvStudioGrinderSelect');
+    if (studioGrinderSel && grinderApi) {
+      studioGrinderSel.onchange = () => {
+        grinderApi.setPreferredGrinderId(studioGrinderSel.value);
+        renderStudioView(true);
       };
     }
     const champBtn = document.getElementById('cvStudioChampBtn');
@@ -3051,6 +3096,12 @@
       if (ovBtn) ovBtn.hidden = window.innerWidth < 960;
       syncOverviewMode();
     });
+
+    if (typeof window.addEventListener === 'function') {
+      window.addEventListener('coffee-grinder-change', () => {
+        renderStudioView(true);
+      });
+    }
 
     let lastLang = document.documentElement.lang;
     new MutationObserver(() => {
