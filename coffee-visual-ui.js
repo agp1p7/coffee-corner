@@ -400,6 +400,9 @@
       -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M5 4h14l-4.5 9h-5L5 4z'/%3E%3Cpath d='M8 17h8'/%3E%3Cpath d='M12 13v7'/%3E%3C/svg%3E");
       mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M5 4h14l-4.5 9h-5L5 4z'/%3E%3Cpath d='M8 17h8'/%3E%3Cpath d='M12 13v7'/%3E%3C/svg%3E");
     }
+    nav button[data-tab="guide"] {
+      display: none !important;
+    }
     nav button[data-tab="guide"]::before {
       -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='12' cy='13' r='8'/%3E%3Cpath d='M12 9v4l2.5 2.5'/%3E%3Cpath d='M9 2h6'/%3E%3C/svg%3E");
       mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='12' cy='13' r='8'/%3E%3Cpath d='M12 9v4l2.5 2.5'/%3E%3Cpath d='M9 2h6'/%3E%3C/svg%3E");
@@ -523,6 +526,22 @@
       display: flex;
       flex-direction: column;
       gap: 4px;
+    }
+    .cv-acaia-cell[data-cv-tap] {
+      cursor: pointer;
+      transition: background 0.14s ease, box-shadow 0.14s ease;
+    }
+    .cv-acaia-cell[data-cv-tap]:hover,
+    .cv-acaia-cell[data-cv-tap]:focus-visible {
+      background: var(--accent-soft);
+      box-shadow: inset 0 -2px 0 var(--accent);
+      outline: none;
+    }
+    .cv-acaia-tap-hint {
+      font-size: 10px;
+      color: var(--accent);
+      opacity: 0.85;
+      margin-left: 4px;
     }
     .cv-acaia-cell:last-child { border-right: 0; }
     .cv-acaia-val {
@@ -848,7 +867,7 @@
       html:not(.coffee-installed) nav,
       html.coffee-installed nav {
         display: grid !important;
-        grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+        grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
         gap: 2px !important;
         margin: 0 0 14px !important;
       }
@@ -2145,6 +2164,138 @@
     dlg.showModal();
   }
 
+  function openStudioTempModal(currentTemp) {
+    const dlg = getQuickDialog();
+    const en = isEn();
+    dlg.replaceChildren();
+
+    const head = document.createElement('div');
+    head.className = 'cv-quick-head';
+    head.innerHTML = `<h3>🌡️ ${en ? 'Adjust Water Temperature' : '調整沖煮水溫'}</h3>`;
+    const closeBtn = document.createElement('button');
+    closeBtn.type = 'button';
+    closeBtn.textContent = en ? 'Close ✕' : '關閉 ✕';
+    closeBtn.onclick = () => dlg.close();
+    head.append(closeBtn);
+
+    const applyTemp = val => {
+      const tempInput = document.getElementById('temp');
+      if (tempInput) {
+        tempInput.value = String(val);
+        tempInput.dispatchEvent(new Event('input', { bubbles: true }));
+        renderStudioView(true);
+      }
+      dlg.close();
+    };
+
+    const presets = document.createElement('div');
+    presets.className = 'cv-scale-presets';
+    for (const t of [80, 84, 86, 88, 90, 91, 92, 93, 95, 96]) {
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.textContent = `${t}°C`;
+      if (Math.abs(Number(currentTemp) - t) < 0.25) b.className = 'champ-pill';
+      b.onclick = () => applyTemp(t);
+      presets.append(b);
+    }
+
+    const form = document.createElement('form');
+    form.style.display = 'grid';
+    form.style.gap = '10px';
+    const lbl = document.createElement('label');
+    lbl.textContent = en ? 'Custom temperature (°C)' : '自訂水溫 (°C)';
+    const input = document.createElement('input');
+    input.type = 'number';
+    input.min = '0';
+    input.max = '100';
+    input.step = '0.5';
+    input.required = true;
+    input.value = String(currentTemp ?? 92);
+    lbl.append(input);
+    const submitBtn = document.createElement('button');
+    submitBtn.type = 'submit';
+    submitBtn.id = 'saveRecipe';
+    submitBtn.style.margin = '0';
+    submitBtn.textContent = en ? 'Apply temperature' : '套用水溫';
+    form.append(lbl, submitBtn);
+    form.onsubmit = e => {
+      e.preventDefault();
+      if (!form.reportValidity()) return;
+      const v = Number(input.value);
+      if (Number.isFinite(v) && v >= 0 && v <= 100) applyTemp(v);
+    };
+
+    dlg.append(head, presets, form);
+    dlg.showModal();
+  }
+
+  function openStudioGearModal() {
+    const dlg = getQuickDialog();
+    const en = isEn();
+    dlg.replaceChildren();
+
+    const head = document.createElement('div');
+    head.className = 'cv-quick-head';
+    head.innerHTML = `<h3>⚙️ ${en ? 'Select Dripper & Grinder' : '快速切換濾杯與磨豆機'}</h3>`;
+    const closeBtn = document.createElement('button');
+    closeBtn.type = 'button';
+    closeBtn.textContent = en ? 'Close ✕' : '關閉 ✕';
+    closeBtn.onclick = () => dlg.close();
+    head.append(closeBtn);
+
+    const body = document.createElement('div');
+    body.style.display = 'grid';
+    body.style.gap = '12px';
+
+    for (const [id, labelZh, labelEn] of [
+      ['equipment-dripper', '濾杯／沖煮器具', 'Dripper / brewer'],
+      ['equipment-grinder', '我的磨豆機（自動換算刻度）', 'Grinder (auto-calibrates dial)']
+    ]) {
+      const realSel = document.getElementById(id);
+      if (!realSel) continue;
+      const lbl = document.createElement('label');
+      lbl.textContent = en ? labelEn : labelZh;
+      const sel = document.createElement('select');
+      for (const opt of Array.from(realSel.options)) {
+        const o = document.createElement('option');
+        o.value = opt.value;
+        o.textContent = opt.textContent;
+        if (opt.selected) o.selected = true;
+        sel.append(o);
+      }
+      sel.onchange = () => {
+        realSel.value = sel.value;
+        realSel.dispatchEvent(new Event('change'));
+        renderStudioView(true);
+      };
+      lbl.append(sel);
+      body.append(lbl);
+    }
+
+    const actions = document.createElement('div');
+    actions.className = 'cv-quick-actions';
+    const manageBtn = document.createElement('button');
+    manageBtn.type = 'button';
+    manageBtn.className = 'bean-scan-btn';
+    manageBtn.textContent = en ? '⚡ Manage / Quick-add common gear' : '⚡ 管理／一鍵新增常見器材';
+    manageBtn.onclick = () => {
+      dlg.close();
+      const mgrBtn = document.querySelector('#coffeeEquipmentManager button');
+      if (mgrBtn) mgrBtn.click();
+    };
+    actions.append(manageBtn);
+
+    const doneBtn = document.createElement('button');
+    doneBtn.type = 'button';
+    doneBtn.id = 'saveRecipe';
+    doneBtn.textContent = en ? 'Done' : '完成';
+    doneBtn.onclick = () => dlg.close();
+    actions.append(doneBtn);
+
+    dlg.append(head, body, actions);
+    dlg.showModal();
+  }
+
   function renderStudioView(force = false) {
     const brewSection = document.getElementById('brew');
     if (!brewSection || typeof read !== 'function' || typeof m !== 'function') return;
@@ -2278,8 +2429,12 @@
     const sortedRecipes = (typeof db !== 'undefined' && Array.isArray(db.recipes))
       ? [...db.recipes].sort((a, b) => Number(!!b.favorite) - Number(!!a.favorite))
       : [r];
-    const recipeOptionsHtml = sortedRecipes.map(x => {
-      const sel = x.id === r.id ? 'selected' : '';
+    const hasSavedMatch = sortedRecipes.some(x => x.id === r.id && x.name === r.name);
+    const draftOptionHtml = !hasSavedMatch
+      ? `<option value="${esc(r.id)}" selected>${esc(r.name)} (${L('草稿', 'Draft')})</option>`
+      : '';
+    const recipeOptionsHtml = draftOptionHtml + sortedRecipes.map(x => {
+      const sel = hasSavedMatch && x.id === r.id ? 'selected' : '';
       return `<option value="${esc(x.id)}" ${sel}>${x.favorite ? '★ ' : ''}${esc(x.name)}</option>`;
     }).join('');
 
@@ -2313,16 +2468,16 @@
         </div>
 
         <div class="cv-acaia-strip">
-          <div class="cv-acaia-cell">
-            <span class="cv-kicker">DOSE · ${L('粉量', 'DOSE')}</span>
+          <div class="cv-acaia-cell" role="button" tabindex="0" data-cv-tap="dose" title="${L('點選調整粉量', 'Tap to scale dose')}">
+            <span class="cv-kicker">DOSE · ${L('粉量', 'DOSE')}<span class="cv-acaia-tap-hint">✎</span></span>
             <div class="cv-acaia-val cv-mono">${esc(r.dose)}<span class="cv-acaia-unit">g</span></div>
           </div>
           <div class="cv-acaia-cell">
             <span class="cv-kicker">WATER · ${L('萃取水', 'WATER')}</span>
             <div class="cv-acaia-val cv-mono">${Math.round(summary.water * 10) / 10}<span class="cv-acaia-unit">g</span></div>
           </div>
-          <div class="cv-acaia-cell">
-            <span class="cv-kicker">TEMP · ${L('水溫', 'TEMP')}</span>
+          <div class="cv-acaia-cell" role="button" tabindex="0" data-cv-tap="temp" title="${L('點選調整水溫', 'Tap to adjust temp')}">
+            <span class="cv-kicker">TEMP · ${L('水溫', 'TEMP')}<span class="cv-acaia-tap-hint">✎</span></span>
             <div class="cv-acaia-val cv-mono">${esc(r.temp)}<span class="cv-acaia-unit">°C</span></div>
           </div>
           <div class="cv-acaia-cell">
@@ -2339,6 +2494,7 @@
           <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
             <div class="cv-dose-group">${doseTabsHtml}</div>
             <button type="button" class="cv-hair-btn" id="cvStudioBeanBtn" style="padding:4px 9px !important;">${UI_ICONS.bean}<span>${L('換豆', 'Beans')}</span></button>
+            <button type="button" class="cv-hair-btn" id="cvStudioGearBtn" style="padding:4px 9px !important;">${UI_ICONS.sliders}<span>${L('換器材', 'Gear')}</span></button>
             <button type="button" class="cv-hair-btn accent" id="cvStudioScanBtn" style="padding:4px 9px !important;">${UI_ICONS.camera}<span>${L('拍豆袋', 'Scan')}</span></button>
           </div>
         </div>
@@ -2441,6 +2597,23 @@
     if (beanBtn) {
       beanBtn.onclick = () => openStudioBeanModal();
     }
+    const gearBtn = document.getElementById('cvStudioGearBtn');
+    if (gearBtn) {
+      gearBtn.onclick = () => openStudioGearModal();
+    }
+    studio.querySelectorAll('[data-cv-tap]').forEach(cell => {
+      const trigger = () => {
+        if (cell.dataset.cvTap === 'dose') openStudioScaleModal(r.dose);
+        else if (cell.dataset.cvTap === 'temp') openStudioTempModal(r.temp);
+      };
+      cell.onclick = trigger;
+      cell.onkeydown = e => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          trigger();
+        }
+      };
+    });
     const scanBtn = document.getElementById('cvStudioScanBtn');
     if (scanBtn) {
       scanBtn.onclick = () => {
@@ -2918,7 +3091,7 @@
         for (const subBtn of wsTabs.querySelectorAll('button:not(#cvWorkspaceOverviewTab)')) {
           subBtn.addEventListener('click', () => {
             overviewActive = false;
-            syncOverviewMode();
+            syncOverviewMode(subBtn);
           });
         }
       }
@@ -2928,7 +3101,7 @@
     }
   }
 
-  function syncOverviewMode() {
+  function syncOverviewMode(explicitSubBtn = null) {
     const historySec = document.getElementById('history');
     const ovBtn = document.getElementById('cvWorkspaceOverviewTab');
     const wsTabs = document.querySelector('#coffeeWorkspace .workspace-tabs');
@@ -2941,6 +3114,8 @@
         const subBtns = Array.from(wsTabs.querySelectorAll('button:not(#cvWorkspaceOverviewTab)'));
         if (activeOverview) {
           for (const b of subBtns) b.setAttribute('aria-pressed', 'false');
+        } else if (explicitSubBtn) {
+          for (const b of subBtns) b.setAttribute('aria-pressed', String(b === explicitSubBtn));
         } else if (subBtns.length && !subBtns.some(b => b.getAttribute('aria-pressed') === 'true')) {
           subBtns[0].click();
         }

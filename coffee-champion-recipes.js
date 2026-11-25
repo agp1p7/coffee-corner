@@ -1769,15 +1769,6 @@
     }
 
     const scaledNotes = isDoseScaled ? scaleGramText(String(tpl.notes || ''), factor) : String(tpl.notes || '');
-    const grinderApi = typeof window !== 'undefined' ? window.CoffeeGrinderGuide : null;
-    const activeGrinderId = options.grinderId || (grinderApi ? grinderApi.getPreferredGrinderId() : 'timemore-c5-pro');
-    const useDynamicGuide = grinderApi && activeGrinderId !== 'timemore-c5-pro';
-    const zhGuide = useDynamicGuide
-      ? grinderApi.formatGrindGuide(tpl, { lang: 'zh-Hant', grinderId: activeGrinderId })
-      : (tpl.grindGuide || '');
-    const enGuide = useDynamicGuide
-      ? grinderApi.formatGrindGuide(tpl, { lang: 'en', grinderId: activeGrinderId })
-      : (tpl.grindGuideEn || '');
 
     const r = {
       id: newId(),
@@ -1790,8 +1781,8 @@
       filter: tpl.filter || '',
       grinder: '',
       grind: '',
-      grindGuide: zhGuide,
-      grindGuideEn: enGuide,
+      grindGuide: tpl.grindGuide || '',
+      grindGuideEn: tpl.grindGuideEn || '',
       grindMinUm: tpl.grindMinUm,
       grindMaxUm: tpl.grindMaxUm,
       grindLevel: tpl.grindLevel || '',

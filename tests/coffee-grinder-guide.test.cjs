@@ -81,4 +81,16 @@ test('all 43 champion recipes convert cleanly across all 13 grinders', () => {
   }
 });
 
+test('does not duplicate grinder label when recipe.grindGuide already contains formatted text', () => {
+  const rec = {
+    method: '手沖',
+    grindGuide: '中粗研磨 · 小飛馬 600N / 楊家 600N 刻度 4.5–5（約 800–930 μm · 刀盤輕觸歸0 · 1–8刻度）',
+    grindMinUm: 800,
+    grindMaxUm: 930
+  };
+  const out = GrinderGuide.formatGrindGuide(rec, { lang: 'zh-Hant', grinderId: 'feima-600n' });
+  const matches = out.match(/小飛馬 600N/g) || [];
+  assert.equal(matches.length, 1, 'expected single grinder name occurrence: ' + out);
+});
+
 console.log(JSON.stringify({ passed, failed: 0 }));

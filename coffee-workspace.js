@@ -49,10 +49,10 @@ const nav=document.querySelector('nav'),history=$('history'),records=E('div'),my
 for(const [v,a,b]of [['beans','咖啡豆','Coffee beans'],['gear','我的器材','Equipment'],['records','沖煮紀錄','Brew journal']])subButtons[v]=button(tabs,a,b,()=>{showSub(v);refresh();});
 const toolbar=$('coffeeEquipmentManager');if(toolbar)gearPanel.append(toolbar);const gearList=E('div');gearPanel.append(gearList);
 function go(id,push=true){const raw=id;if(id==='brew-edit')id='brew';if(!['brew','guide','history','settings'].includes(id))id='brew';document.querySelectorAll('main>section').forEach(s=>s.hidden=s.id!==id);nav.querySelectorAll('button').forEach(b=>{b.classList.toggle('coffee-current-tab',b.dataset.tab===id);if(b.dataset.tab===id)b.setAttribute('aria-current','page');else b.removeAttribute('aria-current');});if(id==='history'){logs();refresh();}if(push&&location.hash!=='#'+id)window.history.pushState(null,'','#'+id);if(typeof window!=='undefined'&&typeof window.dispatchEvent==='function'&&typeof CustomEvent==='function')try{window.dispatchEvent(new CustomEvent('coffee-tab-change',{detail:{id,raw}}));}catch(e){}}
-for(const b of nav.querySelectorAll('button')){b.onclick=()=>go(b.dataset.tab);if(b.dataset.tab==='history')text(own(b),'我的咖啡','My coffee');if(b.dataset.tab==='brew')text(own(b),'配方工作室','Recipes');if(b.dataset.tab==='settings'){text(own(b),'設定','Settings');b.classList.add('workspace-settings');}}
-for(const key of ['history','brew','guide','settings']){const b=nav.querySelector('[data-tab='+key+']');if(b)nav.append(b);}
+for(const b of nav.querySelectorAll('button')){b.onclick=()=>go(b.dataset.tab);if(b.dataset.tab==='history')text(own(b),'我的咖啡','My coffee');if(b.dataset.tab==='brew')text(own(b),'沖煮台','Brew');if(b.dataset.tab==='settings'){text(own(b),'設定','Settings');b.classList.add('workspace-settings');}}
+for(const key of ['brew','history','guide','settings']){const b=nav.querySelector('[data-tab='+key+']');if(b)nav.append(b);}
 for(const event of ['popstate','hashchange'])window.addEventListener(event,e=>{e.stopImmediatePropagation();go(location.hash.slice(1),false);},true);
-const back=$('guide').querySelector('button');if(back)back.onclick=()=>go('brew');
+const back=$('guide').querySelector('button');if(back){text(own(back),'← 返回沖煮台','← Back to Brew');back.onclick=()=>go('brew');}
 const beanDialog=modal();function editBean(item=null,after=null,opts=null){
  beanDialog.replaceChildren();
  beanDialog.append(text(E('h2'),item?'編輯咖啡豆':'新增咖啡豆',item?'Edit coffee':'Add coffee'));
@@ -237,7 +237,8 @@ function addCup(){
  const form=E('form');
  editDialog.append(text(E('h2'),'補記沖煮紀錄','Log past brew'),form);
  let r=clean(db.recipes.find(x=>x.id===selected)||db.recipes[0]);
- const templatePick=field(form,'配方範本','Recipe template',r.id,[]);
+ const templatePick=field(form,'配方範本','Recipe template','',[]);
+ templatePick.replaceChildren();
  for(const rec of db.recipes){const o=E('option',(rec.favorite?'★ ':'')+rec.name);o.value=rec.id;templatePick.append(o);}
  templatePick.value=r.id;
  const brewTime=field(form,'沖煮時間','Brew date & time',toLocalDatetimeValue(),'datetime-local');

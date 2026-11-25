@@ -291,6 +291,12 @@
     }
 
     const guideBlob = [r.grindGuide, r.grindGuideEn, r.notes].filter(Boolean).join(' ');
+    const umMatch = guideBlob.match(/(\d{3,4})\s*[–\-~]\s*(\d{3,4})\s*μm/i);
+    if (umMatch) {
+      const u1 = Math.max(300, Math.min(1250, Number(umMatch[1])));
+      const u2 = Math.max(u1 + 20, Math.min(1300, Number(umMatch[2])));
+      return { minUm: u1, maxUm: u2, level: r.grindLevel || '', levelEn: r.grindLevelEn || '' };
+    }
     const c5Match = guideBlob.match(/C5 Pro[^0-9]*(\d+(?:\.\d+)?)\s*[–\-~]\s*(\d+(?:\.\d+)?)/i);
     if (c5Match) {
       const c1 = parseC5DialToClicks(c5Match[1]);
@@ -383,18 +389,22 @@
   }
 
   function extractLevel(recipe, inferred, en) {
+    const sanitize = raw => {
+      const part = String(raw || '').split('·')[0].trim();
+      return /刻度|dial|\d\s*μm/i.test(part) ? '' : part;
+    };
     if (en) {
-      if (recipe && recipe.grindLevelEn) return recipe.grindLevelEn;
-      if (inferred.levelEn) return inferred.levelEn;
+      if (recipe && recipe.grindLevelEn) return sanitize(recipe.grindLevelEn);
+      if (inferred.levelEn) return sanitize(inferred.levelEn);
       const g = String((recipe && recipe.grindGuideEn) || '');
       const m = g.match(/^([^(]+)/);
-      return m ? m[1].trim() : '';
+      return m ? sanitize(m[1]) : '';
     }
-    if (recipe && recipe.grindLevel) return recipe.grindLevel;
-    if (inferred.level) return inferred.level;
+    if (recipe && recipe.grindLevel) return sanitize(recipe.grindLevel);
+    if (inferred.level) return sanitize(inferred.level);
     const g = String((recipe && recipe.grindGuide) || '');
     const m = g.match(/^([^（(]+)/);
-    return m ? m[1].trim() : '';
+    return m ? sanitize(m[1]) : '';
   }
 
   function formatGrindGuide(recipe, opts) {

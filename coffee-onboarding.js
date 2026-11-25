@@ -14,21 +14,21 @@
   const STEPS = [
     {
       num: '01',
-      tagZh: '配方與磨豆機',
-      tagEn: 'Recipes & Grinders',
-      titleZh: '挑選 43 支冠軍配方，切換你的磨豆機',
-      titleEn: 'Pick from 43 champion recipes & match your grinder',
-      descZh: '從世界冠軍或名家靈感開始最快！不需要自己從頭猜比例與時間，點一下就能一鍵換算成適合你磨豆機的參考刻度。',
-      descEn: 'Start cleanly with WBrC / WAC winning recipes and scale coffee weight or switch grinders with instant micron conversion.',
+      tagZh: '沖煮台一條龍',
+      tagEn: 'One-Stop Brew Deck',
+      titleZh: '從「沖煮台」直接選配方、調粉量水溫、換磨豆機',
+      titleEn: 'Pick recipes, tweak dose/temp & switch grinders in one place',
+      descZh: '所有沖煮準備都在「沖煮台」完成！不用切去別的分頁，點粉量或水溫數字、換豆／換器材按鈕就能直接調整這杯。',
+      descEn: 'Everything before pouring lives right on the Brew tab—tap DOSE or TEMP tiles, swap beans/gear, or load 43 champion recipes.',
       bulletsZh: [
-        '在「配方工作室」點「🏆 專家配方」，可依手沖、愛樂壓、浸泡、冰沖與濾杯類型篩選（共 43 支）。',
-        '點開配方可自由調整目標粉量（12g / 15g / 18g / 20g / 25g 或自訂），注水量會等比例縮放。',
-        '在配方庫上方或工作室曲線旁切換你的磨豆機（13 款主流手搖／電磨），即顯示專屬刻度與參考微米。'
+        '點「🏆 專家配方」挑選 43 支手沖／愛樂壓／浸泡配方，或點粉量「15g／17g／20g／縮放」與水溫格立即調整。',
+        '點右側「換豆／換器材／拍豆袋」快速配好豆單與濾杯、磨豆機，曲線圖旁可切換 13 款磨豆機換算刻度。',
+        '只有在需要修改分段注水秒數與水流步驟時，才需要點右上角「編輯配方」。'
       ],
       bulletsEn: [
-        'Tap "🏆 Champions" in Studio to filter 43 pour-over, AeroPress, Switch, and iced recipes by brewer or keyword.',
-        'Scale any recipe to your preferred dose (12g–25g or custom) with automatic water and note updates.',
-        'Switch among 13 mainstream grinders in the library or Studio curve header to see dial settings + micron range.'
+        'Tap "🏆 Champions" to browse 43 pour-over/AeroPress recipes, or tap DOSE / TEMP tiles to adjust weights and temperature inline.',
+        'Use "Beans / Gear / Scan" right on the deck and switch among 13 mainstream grinders for instant dial + micron settings.',
+        'Tap "Edit" only when you want to customize pour steps or create a saved recipe.'
       ],
       actionZh: '🏆 開啟名家／冠軍配方庫 →',
       actionEn: '🏆 Open Champion Recipes →',
@@ -39,21 +39,21 @@
     },
     {
       num: '02',
-      tagZh: '豆庫與我的器材',
-      tagEn: 'Beans & Equipment',
-      titleZh: '建立自己的咖啡豆庫與濾杯、磨豆機',
-      titleEn: 'Manage your coffee beans, drippers, and grinders',
-      descZh: '把常喝的咖啡豆與手邊器材建檔後，沖煮時只要點選指定，推薦研磨度與器材資訊會自動帶出並記錄在每一杯裡。',
-      descEn: 'Catalog your beans and gear once so every recipe and tasting log tracks them cleanly—and auto-converts grind dials.',
+      tagZh: '豆庫與常見器材',
+      tagEn: 'Beans & Common Gear',
+      titleZh: '建好咖啡豆庫，31 款常見器材一鍵加入',
+      titleEn: 'Catalog your beans & quick-add 31 common drippers/grinders',
+      descZh: '在「我的咖啡」建檔常喝豆子與器材，選好後之後沖煮都能直接帶入、也不用重複輸入刻度單位。',
+      descEn: 'Save your beans and equipment once under My Coffee—every brew automatically tracks them and matches your grinder.',
       bulletsZh: [
-        '前往「我的咖啡 → 咖啡豆」，支援手動新增或登入 Google 後用「📷 拍豆袋辨識」AI 自動填入豆名、焙度、處理法與風味。',
-        '在「我的器材」新增你的濾杯與磨豆機；只要配方裡選了對應磨豆機，推薦刻度就會自動以該機型計算。',
-        '喝完或不再使用的豆子與器材可先「封存／停用」，過去的沖煮紀錄會完整保留不受影響。'
+        '在「我的咖啡 → 咖啡豆」可手動新增，或登入 Google 後用「📷 拍豆袋辨識」AI 自動填入豆名、焙度與風味。',
+        '在「我的器材」內建 18 款常見濾杯與 13 款主流磨豆機，點一下即可「⚡ 一鍵快速加入」。',
+        '配方只要指定了你的磨豆機，推薦刻度會自動切換成該機型的刻度與參考微米。'
       ],
       bulletsEn: [
-        'Open "My coffee → Coffee beans" to add beans manually or use "📷 Snap bag" AI label scanning (Google sign-in required).',
-        'Add drippers and grinders under "Equipment". When a recipe uses your grinder, grind guides auto-match that model.',
-        'Archive finished beans or retired gear anytime—your past brew logs remain untouched.'
+        'In "My coffee → Coffee beans", add manually or use "📷 Snap bag" AI label scanning (Google sign-in required).',
+        'Under "Equipment", 1-tap quick-add from 18 common drippers and 13 mainstream grinders.',
+        'Selecting your grinder in any recipe automatically converts recommended grind dials.'
       ],
       actionZh: '☕ 前往我的咖啡（豆庫／器材）→',
       actionEn: '☕ Go to My Coffee (Beans & Gear) →',
@@ -64,26 +64,26 @@
     },
     {
       num: '03',
-      tagZh: '引導沖煮與日記',
+      tagZh: '開始沖煮與紀錄',
       tagEn: 'Brew & Journal',
-      titleZh: '專注計時沖煮，寫下每杯「下次只改一件事」',
-      titleEn: 'Brew with step-by-step timer & tasting notes',
-      descZh: '沖煮時跟著大字倒數與提示音分段注水，喝完只需 10 秒記下風味與微調方向，下次沖煮就知道該往哪裡修。',
-      descEn: 'Follow audio-cued pour steps, record actual pauses, and capture flavor + one focused tweak for your next cup.',
+      titleZh: '按下「開始沖煮」專注計時，寫下「下次只改一件事」',
+      titleEn: 'Tap Start Brewing for focused timer & tasting notes',
+      descZh: '準備好粉水後直接點右側「開始沖煮」，App 會進入全螢幕引導計時；喝完立刻記下口感與調整方向。',
+      descEn: 'Hit Start Brewing on the Brew tab for step-by-step countdowns and audio cues, then save flavor + one next tweak.',
       bulletsZh: [
-        '點「開始引導沖煮」進入全螢幕計時；遇到「後加水（Bypass）」或「後加冰塊」會停下等你手動確認完成。',
-        '沖煮中可點「記一次實際斷水」留存實戰時間點，右上方也能開關提示音與螢幕保持亮屏。',
-        '儲存後可在「我的咖啡 → 沖煮紀錄」勾選任意兩杯點「比較兩杯」，用雷達圖與表格並列對照參數差異。'
+        '計時畫面有大字倒數、提示音與手動確認（Bypass／加冰），右上角也能點返回回到沖煮台。',
+        '沖煮中可記「實際斷水」時點，結束後評分酸甜苦厚並寫下一句「下次只改一件事」。',
+        '在「我的咖啡 → 沖煮紀錄」勾選兩杯點「比較兩杯」，可看五角雷達圖與參數對照；也可隨時「＋補記紀錄」。'
       ],
       bulletsEn: [
-        'Start Guided Brewing for a focused countdown timer; manual bypass or ice additions pause cleanly until you confirm.',
-        'Log actual pouring pauses during a brew and toggle audio cues or screen wake-lock anytime.',
-        'In "Brew journal", select any two cups and tap "Compare" for side-by-side parameters and flavor radar.'
+        'Audio-cued pours with manual pauses for bypass/ice, plus a quick Back to Brew button anytime.',
+        'Log actual pouring pauses and record flavor scores plus one tweak for next time.',
+        'Select any 2 brews in "Brew journal" to compare side-by-side with a 5-axis flavor radar.'
       ],
-      actionZh: '⏱️ 前往引導沖煮 →',
-      actionEn: '⏱️ Go to Guided Brewing →',
+      actionZh: '☕ 回到沖煮台開始 →',
+      actionEn: '☕ Go to Brew Deck →',
       runAction: () => {
-        const tab = document.querySelector('nav button[data-tab="guide"]');
+        const tab = document.querySelector('nav button[data-tab="brew"]');
         if (tab) tab.click();
       }
     },
