@@ -227,9 +227,9 @@
       flex-shrink: 0;
     }
     .cv-brand-logo svg {
-      width: 18px;
-      height: 18px;
-      stroke: var(--accent);
+      width: 22px;
+      height: 22px;
+      display: block;
     }
     .cv-brand-title h1 {
       margin: 0 !important;
@@ -1770,7 +1770,7 @@
       const logo = document.createElement('div');
       logo.className = 'cv-brand-logo';
       logo.setAttribute('aria-hidden', 'true');
-      logo.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 5h14l-5.5 9.5v3.5h-3v-3.5L5 5z"/><path d="M8 20h8"/></svg>`;
+      logo.innerHTML = `<svg viewBox="0 0 24 24" fill="none"><path d="M3.2 8.2V3.2H8.2" stroke="var(--ink)" stroke-width="1.5" stroke-linecap="square"/><path d="M20.8 15.8V20.8H15.8" stroke="var(--ink)" stroke-width="1.5" stroke-linecap="square"/><path d="M6.8 6.5H17.2L13.5 13.5H10.5L6.8 6.5Z" stroke="var(--ink)" stroke-width="1.5" stroke-linejoin="round"/><path d="M9.4 6.7L11.2 13.3M14.6 6.7L12.8 13.3" stroke="var(--ink)" stroke-opacity="0.38" stroke-width="1"/><path d="M9.2 15H14.8" stroke="var(--ink)" stroke-width="1.4" stroke-linecap="round"/><path d="M12 16.5C12 16.5 14 18.4 14 19.6A2 2 0 1 1 10 19.6C10 18.4 12 16.5 12 16.5Z" fill="var(--accent)"/></svg>`;
 
       titleWrap = document.createElement('div');
       titleWrap.className = 'cv-brand-title';
