@@ -1,4 +1,4 @@
-const CACHE_NAME = 'yiyu-coffee-shell-v4';
+const CACHE_NAME = 'yiyu-coffee-shell-v5';
 const PRECACHE_URLS = [
   './',
   './index.html',
@@ -8,7 +8,7 @@ const PRECACHE_URLS = [
   './coffee-grinder-guide.js?v=1',
   './recipe-draft-fix.js',
   './coffee-i18n.js?v=3',
-  './coffee-equipment.js?v=8',
+  './coffee-equipment.js?v=9',
   './coffee-brew-flow.js?v=10',
   './coffee-bean-scanner.js?v=3',
   './coffee-workspace.js?v=15',

@@ -67,20 +67,87 @@ function sync(r){ensure();options('dripper',r);options('grinder',r);guide={zh:St
 read=function(){const r=oldRead();if(busy)return r;for(const t of ['dripper','grinder']){const x=choice[t];r[t]=x?x.name:'';r[t+'EquipmentId']=x?x.id:'';if(t==='dripper'){r.shape=x?x.shape:SH[4];r.material=x?x.material:MA[4];}}r.grind=grind.value===''&&legacy?legacy:grind.value.trim();r.grindValue=number(r.grind);r.grindUnit=choice.grinder?choice.grinder.unit:'';if(guide.zh)r.grindGuide=guide.zh;if(guide.en)r.grindGuideEn=guide.en;r.equipmentSnapshot={dripper:copy(choice.dripper),grinder:copy(choice.grinder)};return r;};
 fill=function(r){busy=true;try{oldFill(r);}finally{busy=false;}sync(r);stats();live();render();};
 lock=function(v){oldLock(v);for(const t of ['dripper','grinder']){picker[t].disabled=v;addButtons[t].disabled=v;}manage.disabled=v;};
-const toolbar=E('div');toolbar.id='coffeeEquipmentManager';$('coffeeRecipePanel').querySelector('h2').after(toolbar);const manage=button(toolbar,'我的器材／新增器材','My equipment / Add equipment',()=>{renderList();dialog.showModal();});
-const dialog=E('dialog');dialog.id='coffeeEquipmentDialog';dialog.setAttribute('data-equipment-ui','true');const title=E('h2');labels.push([title,'我的器材','My equipment']);const notice=E('div'),list=E('div'),form=E('form');form.className='equipment-edit';dialog.append(title,notice,list,form);document.body.append(dialog);
-button(dialog,'＋新增器材','＋ Add equipment',()=>openForm());const clearReviewBtn=button(dialog,'一鍵全部確認','Confirm all',()=>{const r=read();for(const item of ensure().items)if(item.review)item.review=false;const ok=save();sync(r);renderList();if(ok)msg(L('已清除全部待確認標記','Cleared all review tags'));});clearReviewBtn.hidden=true;button(dialog,'關閉','Close',()=>dialog.close());
+const COMMON_PRESETS=[
+ {type:'dripper',name:'HARIO V60 01',brand:'HARIO',model:'VD-01T',shape:'錐形',material:'樹脂／塑膠'},
+ {type:'dripper',name:'HARIO V60 02',brand:'HARIO',model:'VD-02T',shape:'錐形',material:'樹脂／塑膠'},
+ {type:'dripper',name:'HARIO V60 02 陶瓷',brand:'HARIO',model:'VDC-02',shape:'錐形',material:'陶瓷'},
+ {type:'dripper',name:'HARIO Switch 02',brand:'HARIO',model:'SSD-200-B',shape:'浸泡／閥門式',material:'玻璃'},
+ {type:'dripper',name:'HARIO Mugen 無限濾杯',brand:'HARIO',model:'VDMU-02',shape:'錐形',material:'樹脂／塑膠'},
+ {type:'dripper',name:'ORIGAMI S 摺紙濾杯',brand:'ORIGAMI',model:'S',shape:'錐形',material:'陶瓷'},
+ {type:'dripper',name:'ORIGAMI Air S',brand:'ORIGAMI',model:'Air S',shape:'錐形',material:'樹脂／塑膠'},
+ {type:'dripper',name:'Kalita Wave 155',brand:'Kalita',model:'Wave 155',shape:'平底',material:'金屬'},
+ {type:'dripper',name:'Kalita Wave 185',brand:'Kalita',model:'Wave 185',shape:'平底',material:'金屬'},
+ {type:'dripper',name:'OREA V4',brand:'OREA',model:'V4',shape:'平底',material:'樹脂／塑膠'},
+ {type:'dripper',name:'Timemore B75 冰瞳平底',brand:'Timemore',model:'B75',shape:'平底',material:'樹脂／塑膠'},
+ {type:'dripper',name:'April Brewer',brand:'April',model:'Plastic',shape:'平底',material:'樹脂／塑膠'},
+ {type:'dripper',name:'CAFEC Flower 花瓣濾杯',brand:'CAFEC',model:'Deep 27 / Flower',shape:'錐形',material:'樹脂／塑膠'},
+ {type:'dripper',name:'KONO 名門濾杯',brand:'KONO',model:'MDN-21',shape:'錐形',material:'樹脂／塑膠'},
+ {type:'dripper',name:'Clever 聰明濾杯',brand:'Mr. Clever',model:'L-500',shape:'浸泡／閥門式',material:'樹脂／塑膠'},
+ {type:'dripper',name:'AeroPress 愛樂壓',brand:'AeroPress',model:'Standard',shape:'其他／不適用',material:'樹脂／塑膠'},
+ {type:'dripper',name:'Melitta 梯形濾杯',brand:'Melitta',model:'102',shape:'梯形',material:'陶瓷'},
+ {type:'dripper',name:'越南滴濾壺 Phin',brand:'Phin',model:'傳統越式',shape:'平底',material:'金屬'},
+ {type:'grinder',name:'Timemore C5 Pro',brand:'Timemore',model:'Chestnut C5 Pro',unit:'刻度（每大格3響）'},
+ {type:'grinder',name:'Timemore C5 ESP Pro',brand:'Timemore',model:'Chestnut C5 ESP Pro',unit:'格 (clicks)'},
+ {type:'grinder',name:'Timemore C3 / C3 Pro',brand:'Timemore',model:'Chestnut C3',unit:'格 (clicks)'},
+ {type:'grinder',name:'Comandante C40 MK4',brand:'Comandante',model:'C40 MK4',unit:'格 (clicks)'},
+ {type:'grinder',name:'1Zpresso ZP6 Special',brand:'1Zpresso',model:'ZP6 Special',unit:'刻度 (號.小格)'},
+ {type:'grinder',name:'1Zpresso K-Ultra',brand:'1Zpresso',model:'K-Ultra',unit:'刻度 (號.小格)'},
+ {type:'grinder',name:'1Zpresso X-Ultra',brand:'1Zpresso',model:'X-Ultra',unit:'圈.號.小格'},
+ {type:'grinder',name:'1Zpresso Q Air / Q2',brand:'1Zpresso',model:'Q Air',unit:'圈.號.小格'},
+ {type:'grinder',name:'KINGrinder K6',brand:'KINGrinder',model:'K6',unit:'總響數 (clicks)'},
+ {type:'grinder',name:'Fellow Ode Gen 2',brand:'Fellow',model:'Ode Gen 2',unit:'刻度 (1–11)'},
+ {type:'grinder',name:'Baratza Encore ESP',brand:'Baratza',model:'Encore ESP',unit:'刻度 (1–40)'},
+ {type:'grinder',name:'小飛馬 600N',brand:'楊家 Feima',model:'600N',unit:'刻度 (1–8)'},
+ {type:'grinder',name:'Niche Zero',brand:'Niche',model:'Zero',unit:'刻度 (0–50)'}
+];
+const toolbar=E('div');toolbar.id='coffeeEquipmentManager';$('coffeeRecipePanel').querySelector('h2').after(toolbar);const manage=button(toolbar,'我的器材／新增器材','My equipment / Add equipment',()=>{presetPanel.hidden=ensure().items.length>0;renderPresets();renderList();dialog.showModal();});
+const dialog=E('dialog');dialog.id='coffeeEquipmentDialog';dialog.setAttribute('data-equipment-ui','true');const title=E('h2');labels.push([title,'我的器材','My equipment']);const notice=E('div'),presetPanel=E('div'),presetTabs=E('div'),presetGrid=E('div'),list=E('div'),form=E('form');presetPanel.id='coffeeEquipmentPresets';presetPanel.className='equip-presets';presetTabs.className='equip-preset-tabs';presetGrid.className='equip-preset-grid';presetPanel.append(presetTabs,presetGrid);form.className='equipment-edit';dialog.append(title,notice,presetPanel,list,form);document.body.append(dialog);
+let presetType='dripper';
+function addPresetItem(p){
+ const c=ensure();
+ if(c.items.length>=1000){notice.textContent=L('器材已達上限','Equipment limit reached');return;}
+ if(c.items.some(y=>y.type===p.type&&y.name.trim().toLowerCase()===p.name.toLowerCase())){notice.textContent=L('此器材已在清單中：','Already in your equipment: ')+p.name;return;}
+ const item={id:id(),type:p.type,name:p.name,brand:p.brand,model:p.model,shape:p.type==='dripper'?p.shape:'',material:p.type==='dripper'?p.material:'',unit:p.type==='grinder'?p.unit:'',active:true,review:false};
+ c.items.push(item);
+ const r=read(),ok=save();sync(r);
+ if(target===p.type&&picker[target]){picker[target].value=item.id;picker[target].onchange();}
+ renderPresets();renderList();
+ notice.textContent=ok?L('已一鍵加入「'+item.name+'」','Added "'+item.name+'"'):L('器材僅暫存於記憶體，請備份','Equipment is only in memory; export a JSON backup.');
+}
+function renderPresets(){
+ const items=ensure().items;
+ presetTabs.replaceChildren();
+ const dCount=COMMON_PRESETS.filter(p=>p.type==='dripper').length;
+ const gCount=COMMON_PRESETS.filter(p=>p.type==='grinder').length;
+ for(const [t,zh,enLbl] of [['dripper',`常見濾杯／器具 (${dCount})`,`Common Drippers (${dCount})`],['grinder',`常見磨豆機 (${gCount})`,`Common Grinders (${gCount})`]]){
+  const tab=E('button',L(zh,enLbl));tab.type='button';tab.className='champ-pill';tab.setAttribute('aria-pressed',String(presetType===t));
+  tab.onclick=()=>{presetType=t;renderPresets();};
+  presetTabs.append(tab);
+ }
+ presetGrid.replaceChildren();
+ for(const p of COMMON_PRESETS.filter(x=>x.type===presetType)){
+  const exists=items.some(y=>y.type===p.type&&y.name.trim().toLowerCase()===p.name.toLowerCase());
+  const btn=E('button');btn.type='button';btn.className='equip-preset-btn';btn.disabled=exists;
+  const sub=p.type==='dripper'?fixed(p.shape,'shape')+' · '+fixed(p.material,'material'):p.unit;
+  const top=E('strong',(exists?'✓ ':'＋ ')+p.name),bot=E('span',sub);
+  btn.append(top,bot);
+  btn.onclick=()=>addPresetItem(p);
+  presetGrid.append(btn);
+ }
+}
+const togglePresetBtn=button(dialog,'⚡ 常見器材快速加入','⚡ Quick-add common gear',()=>{presetPanel.hidden=!presetPanel.hidden;if(!presetPanel.hidden)renderPresets();});
+button(dialog,'＋手動新增器材','＋ Add custom',()=>openForm());const clearReviewBtn=button(dialog,'一鍵全部確認','Confirm all',()=>{const r=read();for(const item of ensure().items)if(item.review)item.review=false;const ok=save();sync(r);renderList();if(ok)msg(L('已清除全部待確認標記','Cleared all review tags'));});clearReviewBtn.hidden=true;button(dialog,'關閉','Close',()=>dialog.close());
 const controls={};function input(k,a,b,type='text'){const x=E('input');x.type=type;x.id='equipment-form-'+k;x.maxLength=160;controls[k]=x;label(form,a,b,x);return x;}function select(k,a,b,values){const x=E('select');x.id='equipment-form-'+k;for(const [v,z,e] of values){const o=E('option',z);o.value=v;labels.push([o,z,e]);x.append(o);}controls[k]=x;return label(form,a,b,x);}
 select('type','器材類別','Equipment category',[['dripper','濾杯／沖煮器材','Dripper / brewer'],['grinder','磨豆機','Grinder']]);input('name','名稱／暱稱','Name / nickname').required=true;input('brand','品牌（選填）','Brand (optional)');input('model','型號（選填）','Model (optional)');const shapeLabel=select('shape','類型','Shape',SH.map((x,i)=>[x,x,['Conical','Flat-bottom','Trapezoid','Immersion / valve','Other / N/A'][i]]));const materialLabel=select('material','材質','Material',MA.map((x,i)=>[x,x,['Resin / plastic','Ceramic','Glass','Metal','Other / unspecified'][i]]));const unitLabel=input('unit','刻度單位（例如格、點；選填）','Setting unit, e.g. clicks (optional)').parentElement;
 function typeUI(){shapeLabel.hidden=materialLabel.hidden=controls.type.value!=='dripper';unitLabel.hidden=controls.type.value!=='grinder';}controls.type.onchange=typeUI;
 const submit=E('button');submit.type='submit';buttons.push([submit,'儲存器材','Save equipment']);form.append(submit);form.hidden=true;
 function confirmLocal(text,action,host=null){dialog.querySelectorAll('.equipment-confirm').forEach(el=>el.remove());notice.replaceChildren();if(host){const wrap=E('div');wrap.className='equipment-confirm';wrap.append(E('p',text));button(wrap,'確定','Confirm',()=>{wrap.remove();action();});button(wrap,'取消','Cancel',()=>wrap.remove());host.append(wrap);localize(false);return;}notice.append(E('p',text));button(notice,'確定','Confirm',()=>{notice.replaceChildren();action();});button(notice,'取消','Cancel',()=>notice.replaceChildren());localize(false);}
 function renderList(){const items=ensure().items;clearReviewBtn.hidden=!items.some(x=>x.review);list.replaceChildren();for(const x of items){const box=E('div');box.className='box';const name=E('h3',x.name),description=E('p',(x.type==='dripper'?fixed(x.shape,'shape')+' · '+fixed(x.material,'material'):[x.brand,x.model,x.unit].filter(Boolean).join(' · '))+(x.review?L('（由舊配方匯入，請確認）',' (imported from old records; review)'):''));name.setAttribute('data-coffee-user-text','true');description.setAttribute('data-coffee-user-text','true');box.append(name,description);button(box,'編輯','Edit',()=>openForm(x));button(box,x.active?'停用':'啟用',x.active?'Deactivate':'Activate',()=>confirmLocal(L('切換器材狀態？過去紀錄不變。','Change equipment availability? Past records are unchanged.'),()=>{const r=read();x.active=!x.active;const ok=save();sync(r);renderList();if(ok)msg(L('器材狀態已更新','Equipment status updated'));},box));const delBtn=button(box,'刪除','Delete',()=>confirmLocal(L('刪除此器材？過去的配方與沖煮紀錄不受影響。','Delete this equipment? Past recipes and brew entries are unchanged.'),()=>{const curItems=ensure().items,idx=curItems.indexOf(x);if(idx<0)return;curItems.splice(idx,1);const r=read(),ok=save();if(!ok){curItems.splice(idx,0,x);msg(L('未能刪除器材，原資料保留；請先備份並檢查儲存狀態。','Could not delete equipment; original data kept.'));return;}sync(r);renderList();msg(L('已刪除器材','Equipment deleted'));},box));delBtn.className='cv-icon-danger';list.append(box);}localize(false);}
-function openForm(x=null,type='dripper',pick=null){if(run){msg(L('請先重設計時','Reset the timer first'));return;}target=pick;editingId=x?x.id:null;for(const k of Object.keys(controls))controls[k].value=x?x[k]:(k==='type'?type:k==='shape'?SH[0]:k==='material'?MA[0]:'');controls.type.disabled=!!x;typeUI();form.hidden=false;notice.replaceChildren();if(!dialog.open){renderList();dialog.showModal();}localize(false);controls.name.focus();}
-form.onsubmit=event=>{event.preventDefault();if(!form.reportValidity())return;const c=ensure(),previous=c.items.find(x=>x.id===editingId),x={id:previous?previous.id:id(),active:previous?previous.active:true,review:false};for(const k of Object.keys(controls))x[k]=controls[k].value.trim();if(x.type==='grinder'){x.shape='';x.material='';}else x.unit='';if(!itemOK(x)||!x.name.trim()){msg(L('請確認器材資料','Check equipment data'));return;}if(c.items.some(y=>y.id!==x.id&&y.type===x.type&&y.name.trim().toLowerCase()===x.name.toLowerCase())){msg(L('同類器材名稱已存在，請使用不同暱稱。','That name already exists in this category. Use a different nickname.'));return;}if(!previous&&c.items.length>=1000){msg(L('器材已達上限','Equipment limit reached'));return;}const r=read();if(previous)c.items[c.items.indexOf(previous)]=x;else c.items.push(x);const ok=save();sync(r);if(target){picker[target].value=x.id;picker[target].onchange();}form.hidden=true;renderList();notice.textContent=ok?L('器材已儲存；配方若有變更，請另按儲存配方。','Equipment saved. Save the recipe separately if you changed it.'):L('器材僅暫存於記憶體，請匯出JSON備份。','Equipment is only in memory; export a JSON backup.');};
-function localize(refresh=true){for(const group of [labels,buttons])for(let i=group.length-1;i>=0;i--)if(!group[i][0].isConnected)group.splice(i,1);for(const [x,a,b]of [...labels,...buttons])x.textContent=L(a,b);syncDescription();if(refresh&&dialog.open)renderList();}
+function openForm(x=null,type='dripper',pick=null){if(run){msg(L('請先重設計時','Reset the timer first'));return;}target=pick;editingId=x?x.id:null;for(const k of Object.keys(controls))controls[k].value=x?x[k]:(k==='type'?type:k==='shape'?SH[0]:k==='material'?MA[0]:'');controls.type.disabled=!!x;typeUI();form.hidden=false;notice.replaceChildren();if(!x){presetType=type==='grinder'?'grinder':'dripper';presetPanel.hidden=false;renderPresets();}else{presetPanel.hidden=true;}if(!dialog.open){renderList();dialog.showModal();}localize(false);controls.name.focus();}
+form.onsubmit=event=>{event.preventDefault();if(!form.reportValidity())return;const c=ensure(),previous=c.items.find(x=>x.id===editingId),x={id:previous?previous.id:id(),active:previous?previous.active:true,review:false};for(const k of Object.keys(controls))x[k]=controls[k].value.trim();if(x.type==='grinder'){x.shape='';x.material='';}else x.unit='';if(!itemOK(x)||!x.name.trim()){msg(L('請確認器材資料','Check equipment data'));return;}if(c.items.some(y=>y.id!==x.id&&y.type===x.type&&y.name.trim().toLowerCase()===x.name.toLowerCase())){msg(L('同類器材名稱已存在，請使用不同暱稱。','That name already exists in this category. Use a different nickname.'));return;}if(!previous&&c.items.length>=1000){msg(L('器材已達上限','Equipment limit reached'));return;}const r=read();if(previous)c.items[c.items.indexOf(previous)]=x;else c.items.push(x);const ok=save();sync(r);if(target){picker[target].value=x.id;picker[target].onchange();}form.hidden=true;renderPresets();renderList();notice.textContent=ok?L('器材已儲存；配方若有變更，請另按儲存配方。','Equipment saved. Save the recipe separately if you changed it.'):L('器材僅暫存於記憶體，請匯出JSON備份。','Equipment is only in memory; export a JSON backup.');};
+function localize(refresh=true){for(const group of [labels,buttons])for(let i=group.length-1;i>=0;i--)if(!group[i][0].isConnected)group.splice(i,1);for(const [x,a,b]of [...labels,...buttons])x.textContent=L(a,b);syncDescription();if(refresh&&dialog.open){renderPresets();renderList();}}
 let lastLanguage=document.documentElement.lang;const languageObserver=new MutationObserver(()=>{const next=document.documentElement.lang;if(next!==lastLanguage){lastLanguage=next;const r=read();options('dripper',r);options('grinder',r);localize();}});languageObserver.observe(document.documentElement,{attributes:true,attributeFilter:['lang']});
-const style=E('style');style.textContent='.equipment-line{display:flex;gap:8px}.equipment-field{min-width:0}#coffeeEquipmentDialog{width:min(720px,calc(100vw - 24px));max-height:85vh;overflow:auto}#coffeeEquipmentDialog input,#coffeeEquipmentDialog select{width:100%}.equipment-edit{display:grid;gap:12px;margin:20px 0}#coffeeEquipmentManager{margin:12px 0}.equipment-confirm{margin-top:10px;padding:10px 12px;border-radius:10px;border:1px solid rgba(226,168,99,.38);background:rgba(226,168,99,.08)}.equipment-confirm p{margin:0 0 8px;font-size:14px}';document.head.append(style);
+const style=E('style');style.textContent='.equipment-line{display:flex;gap:8px}.equipment-field{min-width:0}#coffeeEquipmentDialog{width:min(760px,calc(100vw - 24px));max-height:88vh;overflow:auto}#coffeeEquipmentDialog input,#coffeeEquipmentDialog select{width:100%}.equipment-edit{display:grid;gap:12px;margin:20px 0}#coffeeEquipmentManager{margin:12px 0}.equipment-confirm{margin-top:10px;padding:10px 12px;border-radius:10px;border:1px solid rgba(226,168,99,.38);background:rgba(226,168,99,.08)}.equipment-confirm p{margin:0 0 8px;font-size:14px}.equip-presets{margin:12px 0 16px;padding:12px;border-radius:6px;border:1px solid var(--rule,rgba(245,222,195,.16));background:var(--surface,rgba(245,222,195,.04))}.equip-preset-tabs{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px}.equip-preset-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:8px}.equip-preset-btn{display:flex;flex-direction:column;align-items:flex-start;text-align:left;gap:2px;margin:0!important;padding:8px 10px!important;min-height:48px!important;border-radius:4px!important;background:var(--bg,#161311)!important;border:1px solid var(--rule-strong,rgba(245,222,195,.18))!important}.equip-preset-btn strong{font-size:13.5px;color:var(--ink,#f5efe6)}.equip-preset-btn span{font-size:11.5px;color:var(--ink-2,#b5a899)}.equip-preset-btn:hover:not(:disabled){border-color:var(--accent,#d98a4e)!important;background:var(--accent-soft,rgba(217,138,78,.14))!important}.equip-preset-btn:disabled{opacity:.55}';document.head.append(style);
 const r=db.recipes.find(x=>x.id===selected)||db.recipes[0];sync(r);localize(false);
 if(typeof window!=='undefined'&&typeof window.addEventListener==='function')window.addEventListener('coffee-grinder-change',()=>syncDescription());
 })();
