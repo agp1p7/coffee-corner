@@ -39,7 +39,6 @@ const provider = new GoogleAuthProvider();
 const STORAGE_KEY = 'yiyu-coffee-v2';
 const SYNC_META_PREFIX = 'yiyu-coffee-sync-meta-v1:';
 const LAST_UID_KEY = 'yiyu-coffee-sync-last-uid';
-const SAFETY_BACKUP_KEY = 'yiyu-coffee-sync-safety-exported';
 const TOMBSTONE_TTL_MS = 90 * 24 * 60 * 60 * 1000;
 const MAX_BATCH_OPS = 350;
 
@@ -349,8 +348,8 @@ function renderSyncStatusUI() {
     if (noticeP && noticeP.getAttribute('data-sync-lang') !== currentLang) {
       noticeP.setAttribute('data-sync-lang', currentLang);
       noticeP.innerHTML = L(
-        '※ 首次登入前會自動先下載一份本機 JSON 備份檔，確保資料安全。<br>※ 登入後將自動雙向同步您的配方、沖煮日記、豆庫與器材（支援時間戳衝突比對與同步刪除）。',
-        '※ Before your first sign-in, a local JSON backup is automatically downloaded for safety.<br>※ Once signed in, recipes, brew journal, beans, and equipment sync automatically with conflict resolution.'
+        '※ 登入後將自動雙向同步您的配方、沖煮日記、豆庫與器材（支援時間戳衝突比對與同步刪除）；如需離線留存可隨時使用下方「JSON 備份」。',
+        '※ Once signed in, recipes, brew journal, beans, and equipment sync automatically with conflict resolution. Use "JSON backup" below anytime for a manual copy.'
       );
     }
   }
@@ -399,31 +398,6 @@ function renderSyncStatusUI() {
       break;
   }
   setTextIfChanged(statusEl, nextStatusText);
-}
-
-// 首次登入防護性自動匯出 JSON
-function exportSafetyBackup() {
-  try {
-    if (localStorage.getItem(SAFETY_BACKUP_KEY) === '1') return;
-    const current = getLocalDB();
-    const hasData = (current.recipes && current.recipes.length > 0) || (current.cups && current.cups.length > 0);
-    if (!hasData) return;
-
-    const str = JSON.stringify(current, null, 2);
-    const blob = new Blob([str], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `coffee-corner-backup-before-sync-${new Date().toISOString().slice(0, 10)}.json`;
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-    setTimeout(() => URL.revokeObjectURL(url), 10000);
-    localStorage.setItem(SAFETY_BACKUP_KEY, '1');
-    console.log('[Sync] 首次登入防護備份已自動下載');
-  } catch (e) {
-    console.warn('[Sync] 自動下載備份略過', e);
-  }
 }
 
 // -------------------------------------------------------------------------
@@ -743,7 +717,6 @@ function bindUIControls() {
     btnLogin._syncBound = true;
     btnLogin.onclick = async () => {
       try {
-        exportSafetyBackup();
         await signInWithPopup(auth, provider);
       } catch (err) {
         console.error('[Sync] 登入失敗:', err);
