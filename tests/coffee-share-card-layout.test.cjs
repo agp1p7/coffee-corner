@@ -10,4 +10,20 @@ test('metadata text has at least 32px grid padding',()=>{for(const story of [fal
 test('share edits and explicit empty flavor do not mutate original',()=>{const c=cup(),before=JSON.stringify(c);A.match(render(c,{beanFlavor:'分享風味'}).text,/分享風味/);A.doesNotMatch(render(c,{beanFlavor:''}).text,/風味描述|白花/);A.equal(JSON.stringify(c),before);});
 test('overflow flavor disables eligibility without truncation',()=>{for(const story of [false,true])A.equal(render(cup(),{story,beanFlavor:'豆'.repeat(3000)}).result.fits,false);});
 test('snapshot flavor fallback remains supported',()=>{const c=cup();delete c.recipe.beanFlavor;c.recipe.beanSnapshot={beanFlavor:'舊快照'};A.match(render(c,{}).text,/舊快照/);});
+test('multi-line flavor, long tasting note, and detailed grinder gear fit in both square and story',()=>{
+  const c=cup();
+  c.recipe.beanFlavor='柑橘、白桃、茉莉花香、伯爵茶與蜂蜜尾韻';
+  c.recipe.dripper='HARIO V60 02';
+  c.recipe.grinder='1Zpresso X-Ultra';
+  c.recipe.grindGuide='中細研磨 · 1Zpresso X-Ultra 刻度 1.5.5–2.1.2（約 650–780 μm · 鎖死歸零）';
+  c.taste='入口白桃與柑橘果酸明亮，中段呈現細緻茉莉花與紅茶甜韻，冷卻後仍乾淨滑順。';
+  for(const story of [false,true]){
+    for(const theme of ['sumi','washi']){
+      const r=render(c,{story,theme,gear:true,date:true});
+      A.equal(r.result.fits,true,`expected fits=true for story=${story}, theme=${theme}`);
+      A.match(r.text,/X-Ultra/);
+      A.match(r.text,/伯爵茶/);
+    }
+  }
+});
 console.log(JSON.stringify({passed,failed:0,scope:'mock Canvas; not browser or real-font acceptance'}));
