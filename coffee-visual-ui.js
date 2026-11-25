@@ -3126,6 +3126,8 @@
       renderRecipeWaterChart();
       renderActiveBrewGauge();
     }, 250);
+
+    document.documentElement.classList.remove('cv-booting');
   }
 
   if (document.readyState === 'loading') {
