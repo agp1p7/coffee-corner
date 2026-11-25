@@ -3,7 +3,7 @@
   "name": "一隅・咖啡角",
   "short_name": "咖啡角",
   "lang": "zh-Hant",
-  "start_url": "./#guide",
+  "start_url": "./#brew",
   "scope": "./",
   "display": "standalone",
   "orientation": "any",

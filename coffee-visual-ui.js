@@ -116,6 +116,7 @@
     html {
       background-color: var(--bg);
       overflow-x: clip;
+      overscroll-behavior-y: none;
     }
 
     body {
@@ -130,6 +131,7 @@
       padding: 16px 24px 56px !important;
       -webkit-font-smoothing: antialiased;
       overflow-x: clip;
+      overscroll-behavior-y: none;
       transition: background-color 0.2s ease, color 0.2s ease;
     }
 
@@ -1261,6 +1263,54 @@
       width: auto !important;
       max-width: 195px;
     }
+    html body #cvQuickDialog {
+      box-sizing: border-box;
+      width: min(500px, calc(100vw - 24px)) !important;
+      max-width: calc(100vw - 24px) !important;
+      max-height: 86vh;
+      overflow: auto;
+      padding: 18px !important;
+      border-radius: 6px !important;
+      background: var(--bg) !important;
+      color: var(--ink) !important;
+      border: 1px solid var(--rule-strong) !important;
+    }
+    .cv-quick-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+      padding-bottom: 10px;
+      border-bottom: 1px solid var(--rule);
+      margin-bottom: 12px;
+    }
+    .cv-quick-head h3 { margin: 0; font-size: 1.15rem; color: var(--ink); }
+    .cv-quick-head button { margin: 0 !important; min-height: 34px !important; padding: 4px 10px !important; font-size: 13px !important; }
+    .cv-quick-list { display: grid; gap: 8px; }
+    .cv-quick-item {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      text-align: left;
+      gap: 2px;
+      width: 100%;
+      margin: 0 !important;
+      padding: 10px 12px !important;
+      border-radius: 4px !important;
+      background: var(--surface) !important;
+      border: 1px solid var(--rule) !important;
+      color: var(--ink) !important;
+    }
+    .cv-quick-item.active {
+      border-color: var(--accent) !important;
+      background: var(--accent-soft) !important;
+    }
+    .cv-quick-item strong { font-size: 14.5px; color: var(--ink); }
+    .cv-quick-item span { font-size: 12.5px; color: var(--ink-2); }
+    .cv-quick-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; padding-top: 10px; border-top: 1px solid var(--rule); }
+    .cv-quick-actions button { flex: 1 1 auto; margin: 0 !important; min-height: 40px !important; font-size: 13.5px !important; }
+    .cv-scale-presets { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px; }
+    .cv-scale-presets button { margin: 0 !important; min-height: 36px !important; padding: 4px 12px !important; font-size: 13.5px !important; font-family: 'JetBrains Mono', monospace; }
 
     td, th {
       border-bottom-color: var(--rule) !important;
@@ -1874,12 +1924,15 @@
   // =========================================================================
   let lastStudioKey = '';
 
-  function setStudioEditorExpanded(expanded) {
+  function setStudioEditorExpanded(expanded, pushState = true) {
     const brewSection = document.getElementById('brew');
     if (!brewSection) return;
     brewSection.classList.toggle('cv-editor-collapsed', !expanded);
     if (expanded) {
       ensureBackToStudioBar();
+      if (pushState && location.hash !== '#brew-edit' && typeof window.history?.pushState === 'function') {
+        try { window.history.pushState({ cvEditor: true }, '', '#brew-edit'); } catch (e) {}
+      }
     }
   }
 
@@ -1901,8 +1954,11 @@
       backBtn.id = 'cvBackToStudioBtn';
       backBtn.className = 'cv-hair-btn accent';
       backBtn.onclick = () => {
-        setStudioEditorExpanded(false);
+        setStudioEditorExpanded(false, false);
         renderStudioView(true);
+        if (location.hash === '#brew-edit' && typeof window.history?.back === 'function') {
+          try { window.history.back(); } catch (e) {}
+        }
         window.scrollTo({ top: 0, behavior: 'smooth' });
       };
       bar.append(left, backBtn);
@@ -1915,14 +1971,178 @@
     if (btnEl) btnEl.textContent = L('← 返回沖煮工作室', '← Back to Brew Studio');
   }
 
-  function findWorkspaceScanButton() {
+  function findWorkspaceBeanSelect() {
     const fields = document.getElementById('fields');
+    if (!fields) return null;
+    const allSelects = Array.from(fields.querySelectorAll('select'));
+    return allSelects[allSelects.length - 1] || null;
+  }
+
+  function findWorkspaceBeanButtons() {
+    const fields = document.getElementById('fields');
+    let addBtn = null;
+    let scanBtn = null;
     if (fields) {
       for (const b of fields.querySelectorAll('button')) {
-        if (/拍豆袋|Scan coffee/i.test(b.textContent || b.dataset.cvOrigText || '')) return b;
+        const txt = b.textContent || b.dataset.cvOrigText || '';
+        if (/新增咖啡豆|Add coffee/i.test(txt)) addBtn = b;
+        if (/拍豆袋|Scan coffee/i.test(txt)) scanBtn = b;
       }
     }
-    return null;
+    return { addBtn, scanBtn };
+  }
+
+  function findWorkspaceScanButton() {
+    return findWorkspaceBeanButtons().scanBtn;
+  }
+
+  let quickDialog = null;
+  function getQuickDialog() {
+    if (!quickDialog) {
+      quickDialog = document.createElement('dialog');
+      quickDialog.id = 'cvQuickDialog';
+      quickDialog.setAttribute('data-coffee-user-text', 'true');
+      document.body.append(quickDialog);
+    }
+    return quickDialog;
+  }
+
+  function openStudioScaleModal(currentDose) {
+    const dlg = getQuickDialog();
+    const en = isEn();
+    dlg.replaceChildren();
+
+    const head = document.createElement('div');
+    head.className = 'cv-quick-head';
+    head.innerHTML = `<h3>⚖️ ${en ? 'Scale Coffee Dose' : '等比例縮放粉量與水量'}</h3>`;
+    const closeBtn = document.createElement('button');
+    closeBtn.type = 'button';
+    closeBtn.textContent = en ? 'Close ✕' : '關閉 ✕';
+    closeBtn.onclick = () => dlg.close();
+    head.append(closeBtn);
+
+    const hint = document.createElement('p');
+    hint.className = 'hint';
+    hint.style.margin = '0 0 10px';
+    hint.textContent = en
+      ? `Current dose: ${currentDose}g. Pick a preset or enter a custom weight to scale water proportionally.`
+      : `目前粉量 ${currentDose}g。選擇常用克數或輸入自訂粉量，系統會等比例換算所有段數水量（不改水溫、時間與刻度）。`;
+
+    const presets = document.createElement('div');
+    presets.className = 'cv-scale-presets';
+    const applyDose = val => {
+      const scaleDose = document.getElementById('scaleDose');
+      const scaleBtn = document.getElementById('scale');
+      if (scaleDose && scaleBtn) {
+        scaleDose.value = String(val);
+        scaleBtn.click();
+        renderStudioView(true);
+      }
+      dlg.close();
+    };
+    for (const d of [12, 14, 15, 16, 18, 20, 22, 25, 30]) {
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.textContent = `${d}g`;
+      if (Math.abs(Number(currentDose) - d) < 0.05) b.className = 'champ-pill';
+      b.onclick = () => applyDose(d);
+      presets.append(b);
+    }
+
+    const form = document.createElement('form');
+    form.style.display = 'grid';
+    form.style.gap = '10px';
+    const lbl = document.createElement('label');
+    lbl.textContent = en ? 'Custom coffee dose (g)' : '自訂目標粉量 (g)';
+    const input = document.createElement('input');
+    input.type = 'number';
+    input.min = '0.1';
+    input.max = '200';
+    input.step = '0.1';
+    input.required = true;
+    input.value = String(currentDose || 15);
+    lbl.append(input);
+    const submitBtn = document.createElement('button');
+    submitBtn.type = 'submit';
+    submitBtn.id = 'saveRecipe';
+    submitBtn.style.margin = '0';
+    submitBtn.textContent = en ? 'Apply scale' : '套用等比例縮放';
+    form.append(lbl, submitBtn);
+    form.onsubmit = e => {
+      e.preventDefault();
+      if (!form.reportValidity()) return;
+      const v = Number(input.value);
+      if (Number.isFinite(v) && v > 0) applyDose(v);
+    };
+
+    dlg.append(head, hint, presets, form);
+    dlg.showModal();
+  }
+
+  function openStudioBeanModal() {
+    const dlg = getQuickDialog();
+    const en = isEn();
+    const beanSel = findWorkspaceBeanSelect();
+    const { addBtn, scanBtn } = findWorkspaceBeanButtons();
+    const catalog = (typeof db !== 'undefined' && db.beanCatalog && Array.isArray(db.beanCatalog.items))
+      ? db.beanCatalog.items
+      : [];
+    dlg.replaceChildren();
+
+    const head = document.createElement('div');
+    head.className = 'cv-quick-head';
+    head.innerHTML = `<h3>☕ ${en ? 'Select Coffee Bean' : '快速切換咖啡豆'}</h3>`;
+    const closeBtn = document.createElement('button');
+    closeBtn.type = 'button';
+    closeBtn.textContent = en ? 'Close ✕' : '關閉 ✕';
+    closeBtn.onclick = () => dlg.close();
+    head.append(closeBtn);
+
+    const list = document.createElement('div');
+    list.className = 'cv-quick-list';
+    if (beanSel) {
+      const currentVal = beanSel.value;
+      for (const opt of Array.from(beanSel.options)) {
+        const b = catalog.find(x => x.id === opt.value);
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'cv-quick-item' + (opt.value === currentVal ? ' active' : '');
+        const sub = b
+          ? [b.roaster, b.roast && b.roast !== '未填' ? b.roast : '', b.process, b.beanFlavor].filter(Boolean).join(' · ')
+          : '';
+        btn.innerHTML = `<strong>${esc(opt.textContent)}</strong>${sub ? `<span>${esc(sub)}</span>` : ''}`;
+        btn.onclick = () => {
+          beanSel.value = opt.value;
+          beanSel.dispatchEvent(new Event('change'));
+          renderStudioView(true);
+          dlg.close();
+        };
+        list.append(btn);
+      }
+    }
+
+    const actions = document.createElement('div');
+    actions.className = 'cv-quick-actions';
+    if (addBtn) {
+      const bAdd = document.createElement('button');
+      bAdd.type = 'button';
+      bAdd.className = 'bean-scan-btn';
+      bAdd.textContent = en ? '＋ Add Coffee Bean' : '＋ 新增咖啡豆';
+      bAdd.onclick = () => { dlg.close(); addBtn.click(); };
+      actions.append(bAdd);
+    }
+    if (scanBtn) {
+      const bScan = document.createElement('button');
+      bScan.type = 'button';
+      bScan.className = 'bean-scan-btn';
+      bScan.textContent = en ? '📷 Scan Coffee Bag' : '📷 拍豆袋辨識';
+      bScan.onclick = () => { dlg.close(); scanBtn.click(); };
+      actions.append(bScan);
+    }
+
+    dlg.append(head, list);
+    if (actions.children.length) dlg.append(actions);
+    dlg.showModal();
   }
 
   function renderStudioView(force = false) {
@@ -2219,14 +2439,7 @@
     }
     const beanBtn = document.getElementById('cvStudioBeanBtn');
     if (beanBtn) {
-      beanBtn.onclick = () => {
-        setStudioEditorExpanded(true);
-        const fields = document.getElementById('fields');
-        const beanSel = fields && fields.querySelector('select');
-        const allSelects = fields ? Array.from(fields.querySelectorAll('select')) : [];
-        const defaultBeanSel = allSelects[allSelects.length - 1];
-        if (defaultBeanSel) defaultBeanSel.focus();
-      };
+      beanBtn.onclick = () => openStudioBeanModal();
     }
     const scanBtn = document.getElementById('cvStudioScanBtn');
     if (scanBtn) {
@@ -2239,12 +2452,7 @@
       btn.onclick = () => {
         const d = btn.dataset.cvDose;
         if (d === 'custom') {
-          setStudioEditorExpanded(true);
-          const scaleDet = document.getElementById('scale')?.closest('details');
-          if (scaleDet) {
-            scaleDet.open = true;
-            scaleDet.scrollIntoView({ behavior: 'smooth', block: 'center' });
-          }
+          openStudioScaleModal(r.dose);
           return;
         }
         const scaleDose = document.getElementById('scaleDose');
@@ -3100,6 +3308,16 @@
     if (typeof window.addEventListener === 'function') {
       window.addEventListener('coffee-grinder-change', () => {
         renderStudioView(true);
+      });
+      window.addEventListener('coffee-tab-change', e => {
+        const d = e && e.detail;
+        if (!d) return;
+        if (d.raw === 'brew-edit') {
+          setStudioEditorExpanded(true, false);
+        } else if (d.id === 'brew') {
+          setStudioEditorExpanded(false, false);
+          renderStudioView(true);
+        }
       });
     }
 
