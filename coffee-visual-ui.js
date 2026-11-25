@@ -2083,7 +2083,8 @@
     lbl.append(input);
     const submitBtn = document.createElement('button');
     submitBtn.type = 'submit';
-    submitBtn.id = 'saveRecipe';
+    submitBtn.className = 'cv-primary-cta';
+    submitBtn.style.minHeight = '40px';
     submitBtn.style.margin = '0';
     submitBtn.textContent = en ? 'Apply scale' : '套用等比例縮放';
     form.append(lbl, submitBtn);
@@ -2214,7 +2215,8 @@
     lbl.append(input);
     const submitBtn = document.createElement('button');
     submitBtn.type = 'submit';
-    submitBtn.id = 'saveRecipe';
+    submitBtn.className = 'cv-primary-cta';
+    submitBtn.style.minHeight = '40px';
     submitBtn.style.margin = '0';
     submitBtn.textContent = en ? 'Apply temperature' : '套用水溫';
     form.append(lbl, submitBtn);
@@ -2280,14 +2282,19 @@
     manageBtn.textContent = en ? '⚡ Manage / Quick-add common gear' : '⚡ 管理／一鍵新增常見器材';
     manageBtn.onclick = () => {
       dlg.close();
-      const mgrBtn = document.querySelector('#coffeeEquipmentManager button');
-      if (mgrBtn) mgrBtn.click();
+      if (window.CoffeeEquipment && typeof window.CoffeeEquipment.openPresets === 'function') {
+        window.CoffeeEquipment.openPresets('dripper');
+      } else {
+        const mgrBtn = document.querySelector('#coffeeEquipmentManager button');
+        if (mgrBtn) mgrBtn.click();
+      }
     };
     actions.append(manageBtn);
 
     const doneBtn = document.createElement('button');
     doneBtn.type = 'button';
-    doneBtn.id = 'saveRecipe';
+    doneBtn.className = 'cv-primary-cta';
+    doneBtn.style.minHeight = '40px';
     doneBtn.textContent = en ? 'Done' : '完成';
     doneBtn.onclick = () => dlg.close();
     actions.append(doneBtn);
@@ -2333,11 +2340,12 @@
 
     const grinderApi = typeof window !== 'undefined' ? window.CoffeeGrinderGuide : null;
     const activeGrinderPref = grinderApi ? grinderApi.getPreferredGrinderId() : '';
+    const isBrewActive = typeof run !== 'undefined' && Boolean(run);
 
     const key = JSON.stringify([
       r.id, r.name, r.method, r.dripper, r.shape, r.filter, r.grinder, r.grind,
       r.dose, r.temp, r.cold, r.ice, r.bean, r.roaster, r.roast, r.process, r.beanFlavor,
-      r.steps, recipeIds, beanKey, soundOn, syncTxt, activeGrinderPref, document.documentElement.lang
+      r.steps, recipeIds, beanKey, soundOn, syncTxt, activeGrinderPref, isBrewActive, document.documentElement.lang
     ]);
     if (!force && key === lastStudioKey) return;
     lastStudioKey = key;
@@ -2469,19 +2477,19 @@
 
         <div class="cv-acaia-strip">
           <div class="cv-acaia-cell" role="button" tabindex="0" data-cv-tap="dose" title="${L('點選調整粉量', 'Tap to scale dose')}">
-            <span class="cv-kicker">DOSE · ${L('粉量', 'DOSE')}<span class="cv-acaia-tap-hint">✎</span></span>
+            <span class="cv-kicker">${L('DOSE · 粉量', 'DOSE')}<span class="cv-acaia-tap-hint">✎</span></span>
             <div class="cv-acaia-val cv-mono">${esc(r.dose)}<span class="cv-acaia-unit">g</span></div>
           </div>
           <div class="cv-acaia-cell">
-            <span class="cv-kicker">WATER · ${L('萃取水', 'WATER')}</span>
+            <span class="cv-kicker">${L('WATER · 萃取水', 'WATER')}</span>
             <div class="cv-acaia-val cv-mono">${Math.round(summary.water * 10) / 10}<span class="cv-acaia-unit">g</span></div>
           </div>
           <div class="cv-acaia-cell" role="button" tabindex="0" data-cv-tap="temp" title="${L('點選調整水溫', 'Tap to adjust temp')}">
-            <span class="cv-kicker">TEMP · ${L('水溫', 'TEMP')}<span class="cv-acaia-tap-hint">✎</span></span>
+            <span class="cv-kicker">${L('TEMP · 水溫', 'TEMP')}<span class="cv-acaia-tap-hint">✎</span></span>
             <div class="cv-acaia-val cv-mono">${esc(r.temp)}<span class="cv-acaia-unit">°C</span></div>
           </div>
           <div class="cv-acaia-cell">
-            <span class="cv-kicker">TIME · ${L('時間', 'TIME')}</span>
+            <span class="cv-kicker">${L('TIME · 時間', 'TIME')}</span>
             <div class="cv-acaia-val cv-mono">${esc(totalTimeStr)}</div>
           </div>
         </div>
@@ -2550,7 +2558,7 @@
 
         <div style="margin-top:auto;display:flex;flex-direction:column;gap:10px;padding-top:8px;">
           <button type="button" class="cv-primary-cta" id="cvStudioStartBtn">
-            <span class="cv-btn-content">${UI_ICONS.play}<span>${L('開始 10 秒預備沖煮', 'Start 10s Prep & Brew')}</span></span>
+            <span class="cv-btn-content">${UI_ICONS.play}<span>${isBrewActive ? L('返回進行中的沖煮計時', 'Return to Active Brew') : L('開始 10 秒預備沖煮', 'Start 10s Prep & Brew')}</span></span>
           </button>
           <div style="display:flex;justify-content:space-between;align-items:center;font-size:11px;color:var(--ink-3);">
             <button type="button" id="cvStudioSoundBtn" style="background:none !important;border:0 !important;padding:2px 0 !important;min-height:auto !important;color:var(--ink-2) !important;font-size:11px !important;">
@@ -2640,6 +2648,11 @@
     const startBtn = document.getElementById('cvStudioStartBtn');
     if (startBtn) {
       startBtn.onclick = () => {
+        if (typeof run !== 'undefined' && run) {
+          const guideTab = document.querySelector('nav button[data-tab="guide"]');
+          if (guideTab) guideTab.click();
+          return;
+        }
         const enterGuide = document.getElementById('coffeeEnterGuide');
         if (enterGuide) enterGuide.click();
         setTimeout(() => {
