@@ -61,15 +61,36 @@ test('formats X-Ultra rot.num.click notation and standard bilingual guide text',
 });
 
 test('infers micron ranges from C5 Pro notes or method fallbacks', () => {
-  const fromNotes = GrinderGuide.inferMicronRange({
-    method: '手沖',
-    notes: '【推薦研磨】中細至中研磨（C5 Pro 刻度 13–14.2）。'
+  const fromNotesSingle = GrinderGuide.inferMicronRange({
+    method: '愛樂壓',
+    notes: '【推薦研磨】中研磨（C5 Pro 刻度 11–15.2）。'
   });
-  assert.ok(fromNotes.minUm >= 700 && fromNotes.maxUm <= 860, JSON.stringify(fromNotes));
+  assert.ok(fromNotesSingle.minUm >= 540 && fromNotesSingle.maxUm <= 710, JSON.stringify(fromNotesSingle));
+
+  const fromNotesMulti = GrinderGuide.inferMicronRange({
+    method: '手沖',
+    notes: '【推薦研磨】中細至中研磨（C5 Pro 刻度 14–1圈+3.1）。'
+  });
+  assert.ok(fromNotesMulti.minUm >= 640 && fromNotesMulti.maxUm <= 760, JSON.stringify(fromNotesMulti));
+
+  const fromNotesEn = GrinderGuide.inferMicronRange({
+    method: '手沖',
+    notes: 'C5 Pro dial 14.2–1r+5.2'
+  });
+  assert.ok(fromNotesEn.minUm >= 660 && fromNotesEn.maxUm <= 820, JSON.stringify(fromNotesEn));
 
   const fallbackAero = GrinderGuide.inferMicronRange({ method: '愛樂壓' });
   assert.equal(fallbackAero.minUm, 550);
   assert.equal(fallbackAero.maxUm, 680);
+});
+
+test('aligns Timemore C5 Pro conversion with ArminCoffee C40 measured curve', () => {
+  assert.equal(GrinderGuide.convertMicronsToDial('timemore-c5-pro', 650, 650, 'zh-Hant').rangeText, '14');
+  assert.equal(GrinderGuide.convertMicronsToDial('timemore-c5-pro', 750, 750, 'zh-Hant').rangeText, '1圈+3.1');
+  assert.equal(GrinderGuide.convertMicronsToDial('timemore-c5-pro', 750, 750, 'en').rangeText, '1r+3.1');
+  assert.equal(GrinderGuide.convertMicronsToDial('timemore-c5-pro', 783, 783, 'zh-Hant').rangeText, '1圈+5');
+  assert.equal(GrinderGuide.convertMicronsToDial('timemore-c5-pro', 783, 783, 'en').rangeText, '1r+5');
+  assert.equal(GrinderGuide.convertMicronsToDial('timemore-c5-pro', 950, 950, 'zh-Hant').rangeText, '1圈+12');
 });
 
 test('all 45 champion recipes convert cleanly across all 13 grinders', () => {

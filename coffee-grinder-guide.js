@@ -12,12 +12,12 @@
       shortName: 'C5 Pro',
       brand: 'Timemore',
       kind: 'hand',
-      zeroZh: '鎖死歸零 · 每大格3響',
-      zeroEn: 'Burr-lock zero · 3 clicks/num',
-      unitZh: '數字刻度（大格.小格）',
-      unitEn: 'Dial number (num.click)',
+      zeroZh: '鎖死歸零 · 每圈16大格(48響)',
+      zeroEn: 'Burr-lock zero · 16 nums/rot (48 clicks)',
+      unitZh: '圈數+大格.小格（0–15，每大格3響）',
+      unitEn: 'rot+num.click (0–15, 3 clicks/num)',
       aliases: ['timemore c5 pro', 'c5 pro', 'chestnut c5', '泰摩 c5', 'c5'],
-      anchors: [24, 30, 36, 40, 44, 48, 52],
+      anchors: [24, 33, 42, 58, 72, 84, 96],
       format: 'timemore-c5'
     },
     {
@@ -267,14 +267,24 @@
   }
 
   function parseC5DialToClicks(str) {
-    const parts = String(str || '').trim().split('.');
+    const s = String(str || '').trim().replace(/^一(?=[圈r])/i, '1').replace(/^二(?=[圈r])/i, '2').replace(/^三(?=[圈r])/i, '3');
+    let rot = 0;
+    let rest = s;
+    const rotMatch = s.match(/^(\d+)\s*[圈r](?:\s*\+\s*(.*))?$/i);
+    if (rotMatch) {
+      rot = Number(rotMatch[1]) || 0;
+      rest = (rotMatch[2] || '').trim();
+      if (!rest) return rot * 48;
+    }
+    const parts = rest.split('.');
     const major = Number(parts[0]);
-    if (!Number.isFinite(major)) return NaN;
-    if (parts.length === 1) return major * 3;
+    if (!Number.isFinite(major)) return rot > 0 ? rot * 48 : NaN;
+    const base = rot * 48;
+    if (parts.length === 1) return base + major * 3;
     const minor = Number(parts[1]);
-    if (!Number.isFinite(minor)) return major * 3;
-    if (parts[1] === '5') return Math.round((major + 0.5) * 3);
-    return major * 3 + Math.min(2, Math.max(0, Math.round(minor)));
+    if (!Number.isFinite(minor)) return base + major * 3;
+    if (parts[1] === '5') return base + Math.round((major + 0.5) * 3);
+    return base + major * 3 + Math.min(2, Math.max(0, Math.round(minor)));
   }
 
   function inferMicronRange(recipe) {
@@ -297,7 +307,7 @@
       const u2 = Math.max(u1 + 20, Math.min(1300, Number(umMatch[2])));
       return { minUm: u1, maxUm: u2, level: r.grindLevel || '', levelEn: r.grindLevelEn || '' };
     }
-    const c5Match = guideBlob.match(/C5 Pro[^0-9]*(\d+(?:\.\d+)?)\s*[–\-~]\s*(\d+(?:\.\d+)?)/i);
+    const c5Match = guideBlob.match(/C5 Pro[^0-9一二三]*([0-9一二三]+(?:[圈r](?:\+\d+(?:\.\d+)?)?|\.\d+)?)\s*[–\-~]\s*([0-9一二三]+(?:[圈r](?:\+\d+(?:\.\d+)?)?|\.\d+)?)/i);
     if (c5Match) {
       const c1 = parseC5DialToClicks(c5Match[1]);
       const c2 = parseC5DialToClicks(c5Match[2]);
@@ -322,14 +332,24 @@
     return { minUm: 700, maxUm: 860, level: '中研磨', levelEn: 'Medium' };
   }
 
-  function formatSingleDial(grinder, rawValue) {
+  function formatSingleDial(grinder, rawValue, lang) {
     const val = Math.max(0, rawValue);
     switch (grinder.format) {
       case 'timemore-c5': {
         const clicks = Math.max(3, Math.round(val));
-        const major = Math.floor(clicks / 3);
-        const sub = clicks % 3;
-        return sub === 0 ? String(major) : `${major}.${sub}`;
+        if (clicks < 48) {
+          const major = Math.floor(clicks / 3);
+          const sub = clicks % 3;
+          return sub === 0 ? String(major) : `${major}.${sub}`;
+        }
+        const rot = Math.floor(clicks / 48);
+        const rem = clicks % 48;
+        const major = Math.floor(rem / 3);
+        const sub = rem % 3;
+        const unit = lang === 'en' ? 'r' : '圈';
+        if (rem === 0) return `${rot}${unit}`;
+        const dial = sub === 0 ? String(major) : `${major}.${sub}`;
+        return `${rot}${unit}+${dial}`;
       }
       case 'clicks':
         return String(Math.max(1, Math.round(val)));
@@ -374,8 +394,8 @@
     const grinder = getGrinder(grinderId);
     const loRaw = interpolatePiecewise(minUm, MICRON_ANCHORS, grinder.anchors);
     const hiRaw = interpolatePiecewise(maxUm, MICRON_ANCHORS, grinder.anchors);
-    const lo = formatSingleDial(grinder, loRaw);
-    const hi = formatSingleDial(grinder, Math.max(loRaw, hiRaw));
+    const lo = formatSingleDial(grinder, loRaw, lang);
+    const hi = formatSingleDial(grinder, Math.max(loRaw, hiRaw), lang);
     const unitSuffix = grinder.format === 'clicks' ? (lang === 'en' ? ' clicks' : ' 格') : '';
     const rangeText = lo === hi ? `${lo}${unitSuffix}` : `${lo}–${hi}${unitSuffix}`;
     return {
