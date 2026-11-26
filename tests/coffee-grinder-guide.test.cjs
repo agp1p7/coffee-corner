@@ -72,7 +72,7 @@ test('infers micron ranges from C5 Pro notes or method fallbacks', () => {
   assert.equal(fallbackAero.maxUm, 680);
 });
 
-test('all 43 champion recipes convert cleanly across all 13 grinders', () => {
+test('all 45 champion recipes convert cleanly across all 13 grinders', () => {
   for (const tpl of Champs.CHAMPIONS) {
     for (const g of GrinderGuide.GRINDERS) {
       const text = GrinderGuide.formatGrindGuide(tpl, { lang: 'zh-Hant', grinderId: g.id });

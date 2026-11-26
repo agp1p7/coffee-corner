@@ -33,16 +33,18 @@ function assertValidRecipe(r) {
   assert.ok(sum.water > 0 && sum.water <= 10000);
 }
 
-test('includes 43 curated master & champion recipes', () => {
-  assert.equal(Champs.CHAMPIONS.length, 43);
-  assert.equal(new Set(Champs.CHAMPIONS.map(c => c.id)).size, 43);
+test('includes 45 curated master & champion recipes including AeroPress iced lattes', () => {
+  assert.equal(Champs.CHAMPIONS.length, 45);
+  assert.equal(new Set(Champs.CHAMPIONS.map(c => c.id)).size, 45);
   const aeroCount = Champs.CHAMPIONS.filter(c => c.method === '愛樂壓').length;
   const pourCount = Champs.CHAMPIONS.filter(c => c.method === '手沖' || c.method === '浸泡式').length;
-  assert.ok(aeroCount >= 12, 'expected >= 12 AeroPress recipes, got ' + aeroCount);
+  assert.ok(aeroCount >= 14, 'expected >= 14 AeroPress recipes, got ' + aeroCount);
   assert.ok(pourCount >= 30, 'expected >= 30 pour-over/hybrid recipes, got ' + pourCount);
+  assert.ok(Champs.CHAMPIONS.some(c => c.id === 'aeropress-iced-latte-espresso'));
+  assert.ok(Champs.CHAMPIONS.some(c => c.id === 'hoffmann-aeropress-iced-latte'));
 });
 
-test('all 43 built recipes pass strict schema and CoffeeSteps validation', () => {
+test('all 45 built recipes pass strict schema and CoffeeSteps validation', () => {
   for (const tpl of Champs.CHAMPIONS) {
     assert.ok(typeof tpl.grindGuide === 'string' && tpl.grindGuide.includes('C5 Pro') && !/C40/i.test(tpl.grindGuide), 'C5 Pro grindGuide present: ' + tpl.id);
     assert.ok(typeof tpl.grindGuideEn === 'string' && tpl.grindGuideEn.includes('C5 Pro') && !/C40/i.test(tpl.grindGuideEn), 'C5 Pro grindGuideEn present: ' + tpl.id);
@@ -73,7 +75,7 @@ test('all 9 Tetsu 4:6 taste & strength combinations pass validation and preserve
   }
 });
 
-test('all 43 recipes pass dose scaling for 12g, 15g, 18g, 20g, 25g', () => {
+test('all 45 recipes pass dose scaling for 12g, 15g, 18g, 20g, 25g', () => {
   for (const tpl of Champs.CHAMPIONS) {
     for (const targetDose of [12, 15, 18, 20, 25]) {
       const r = Champs.buildRecipeFromTemplate(tpl, { targetDose });
@@ -110,6 +112,13 @@ test('buildRecipeFromTemplate scales step notes and recipe notes on dose change'
   assert.ok(devilScaled.steps[0].note.includes('45g'), devilScaled.steps[0].note);
   assert.ok(devilScaled.steps[3].note.includes('120g') && devilScaled.steps[3].note.includes('210g'), devilScaled.steps[3].note);
   assert.ok(devilScaled.notes.includes('90g') && devilScaled.notes.includes('210g') && devilScaled.notes.includes('90°C') && devilScaled.notes.includes('70°C'), devilScaled.notes);
+
+  const latte = Champs.CHAMPIONS.find(c => c.id === 'aeropress-iced-latte-espresso');
+  assert.ok(latte);
+  const latteScaled = Champs.buildRecipeFromTemplate(latte, { targetDose: 15 });
+  assert.equal(latteScaled.dose, 15);
+  assert.ok(latteScaled.steps[0].note.includes('62.5g'), latteScaled.steps[0].note);
+  assert.ok(latteScaled.steps[4].note.includes('66.7g') && latteScaled.steps[4].note.includes('125g'), latteScaled.steps[4].note);
 });
 
 console.log(JSON.stringify({ passed, failed: 0 }));

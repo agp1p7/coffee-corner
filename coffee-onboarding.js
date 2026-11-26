@@ -19,14 +19,14 @@
       titleZh: '從「沖煮台」直接選配方、調粉量水溫、換磨豆機',
       titleEn: 'Pick recipes, tweak dose/temp & switch grinders in one place',
       descZh: '所有沖煮準備都在「沖煮台」完成！不用切去別的分頁，點粉量或水溫數字、換豆／換器材按鈕就能直接調整這杯。',
-      descEn: 'Everything before pouring lives right on the Brew tab—tap DOSE or TEMP tiles, swap beans/gear, or load 43 champion recipes.',
+      descEn: 'Everything before pouring lives right on the Brew tab—tap DOSE or TEMP tiles, swap beans/gear, or load 45 champion recipes.',
       bulletsZh: [
-        '點「🏆 專家配方」挑選 43 支手沖／愛樂壓／浸泡配方，或點粉量「15g／17g／20g／縮放」與水溫格立即調整。',
+        '點「🏆 專家配方」挑選 45 支手沖／愛樂壓／浸泡配方，或點粉量「15g／17g／20g／縮放」與水溫格立即調整。',
         '點右側「換豆／換器材／拍豆袋」快速配好豆單與濾杯、磨豆機，曲線圖旁可切換 13 款磨豆機換算刻度。',
         '只有在需要修改分段注水秒數與水流步驟時，才需要點右上角「編輯配方」。'
       ],
       bulletsEn: [
-        'Tap "🏆 Champions" to browse 43 pour-over/AeroPress recipes, or tap DOSE / TEMP tiles to adjust weights and temperature inline.',
+        'Tap "🏆 Champions" to browse 45 pour-over/AeroPress recipes, or tap DOSE / TEMP tiles to adjust weights and temperature inline.',
         'Use "Beans / Gear / Scan" right on the deck and switch among 13 mainstream grinders for instant dial + micron settings.',
         'Tap "Edit" only when you want to customize pour steps or create a saved recipe.'
       ],
