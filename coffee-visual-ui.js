@@ -2428,8 +2428,8 @@
             : r.method === '愛樂壓'
               ? L('Timemore C5 Pro · 建議刻度 11–15.2', 'Timemore C5 Pro · Dial 11–15.2')
               : r.shape === '平底'
-                ? L('Timemore C5 Pro · 建議刻度 1圈+1.2–1圈+8.1', 'Timemore C5 Pro · Dial 1r+1.2–1r+8.1')
-                : L('Timemore C5 Pro · 建議刻度 14.2–1圈+5.2', 'Timemore C5 Pro · Dial 14.2–1r+5.2');
+                ? L('Timemore C5 Pro · 建議刻度 1圈1.2 ～ 1圈8.1', 'Timemore C5 Pro · Dial 1r 1.2 to 1r 8.1')
+                : L('Timemore C5 Pro · 建議刻度 14.2 ～ 1圈5.2', 'Timemore C5 Pro · Dial 14.2 to 1r 5.2');
     const studioGrinderOptionsHtml = grinderApi
       ? grinderApi.GRINDERS.map(g => `<option value="${esc(g.id)}" ${g.id === resolvedGrinderId ? 'selected' : ''}>${esc(g.shortName)}</option>`).join('')
       : '';

@@ -69,13 +69,19 @@ test('infers micron ranges from C5 Pro notes or method fallbacks', () => {
 
   const fromNotesMulti = GrinderGuide.inferMicronRange({
     method: '手沖',
-    notes: '【推薦研磨】中細至中研磨（C5 Pro 刻度 14–1圈+3.1）。'
+    notes: '【推薦研磨】中細至中研磨（C5 Pro 刻度 14 ～ 1圈3.1）。'
   });
   assert.ok(fromNotesMulti.minUm >= 640 && fromNotesMulti.maxUm <= 760, JSON.stringify(fromNotesMulti));
 
+  const fromNotesLegacyPlus = GrinderGuide.inferMicronRange({
+    method: '手沖',
+    notes: 'C5 Pro 刻度 14–1圈+3.1'
+  });
+  assert.ok(fromNotesLegacyPlus.minUm >= 640 && fromNotesLegacyPlus.maxUm <= 760, JSON.stringify(fromNotesLegacyPlus));
+
   const fromNotesEn = GrinderGuide.inferMicronRange({
     method: '手沖',
-    notes: 'C5 Pro dial 14.2–1r+5.2'
+    notes: 'C5 Pro dial 14.2 to 1r 5.2'
   });
   assert.ok(fromNotesEn.minUm >= 660 && fromNotesEn.maxUm <= 820, JSON.stringify(fromNotesEn));
 
@@ -86,11 +92,12 @@ test('infers micron ranges from C5 Pro notes or method fallbacks', () => {
 
 test('aligns Timemore C5 Pro conversion with ArminCoffee C40 measured curve', () => {
   assert.equal(GrinderGuide.convertMicronsToDial('timemore-c5-pro', 650, 650, 'zh-Hant').rangeText, '14');
-  assert.equal(GrinderGuide.convertMicronsToDial('timemore-c5-pro', 750, 750, 'zh-Hant').rangeText, '1圈+3.1');
-  assert.equal(GrinderGuide.convertMicronsToDial('timemore-c5-pro', 750, 750, 'en').rangeText, '1r+3.1');
-  assert.equal(GrinderGuide.convertMicronsToDial('timemore-c5-pro', 783, 783, 'zh-Hant').rangeText, '1圈+5');
-  assert.equal(GrinderGuide.convertMicronsToDial('timemore-c5-pro', 783, 783, 'en').rangeText, '1r+5');
-  assert.equal(GrinderGuide.convertMicronsToDial('timemore-c5-pro', 950, 950, 'zh-Hant').rangeText, '1圈+12');
+  assert.equal(GrinderGuide.convertMicronsToDial('timemore-c5-pro', 750, 750, 'zh-Hant').rangeText, '1圈3.1');
+  assert.equal(GrinderGuide.convertMicronsToDial('timemore-c5-pro', 750, 750, 'en').rangeText, '1r\u00A03.1');
+  assert.equal(GrinderGuide.convertMicronsToDial('timemore-c5-pro', 783, 783, 'zh-Hant').rangeText, '1圈5');
+  assert.equal(GrinderGuide.convertMicronsToDial('timemore-c5-pro', 783, 783, 'en').rangeText, '1r\u00A05');
+  assert.equal(GrinderGuide.convertMicronsToDial('timemore-c5-pro', 950, 1060, 'zh-Hant').rangeText, '1圈12 ～ 2圈0.1');
+  assert.equal(GrinderGuide.convertMicronsToDial('timemore-c5-pro', 650, 750, 'zh-Hant').rangeText, '14 ～ 1圈3.1');
 });
 
 test('all 45 champion recipes convert cleanly across all 13 grinders', () => {
