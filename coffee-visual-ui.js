@@ -11,6 +11,14 @@
   document.head.append(marker);
 
   const THEME_KEY = 'yiyu-coffee-theme';
+  const THEME_LIST = [
+    { id: 'sumi', mode: 'dark', zh: '深夜吧台', en: 'Sumi Dark', descZh: '炭墨深色 · 琥珀金', descEn: 'Charcoal dark · warm amber', bg: '#11100F', surface: '#171513', ink: '#EFEAE1', accent: '#C88A4B' },
+    { id: 'ocean', mode: 'dark', zh: '海霧藍', en: 'Ocean Mist', descZh: '深海靜謐 · 霧藍光澤', descEn: 'Midnight slate · misty blue', bg: '#0E151D', surface: '#141E29', ink: '#E6EFF6', accent: '#6EB2D4' },
+    { id: 'washi', mode: 'light', zh: '和紙手札', en: 'Washi Light', descZh: '溫潤米紙 · 陶土棕', descEn: 'Warm paper · terracotta', bg: '#F3EEE4', surface: '#EBE4D6', ink: '#1D1A17', accent: '#A6542B' },
+    { id: 'sakura', mode: 'light', zh: '櫻花粉', en: 'Sakura Rose', descZh: '柔霧櫻粉 · 莓果玫瑰', descEn: 'Soft sakura · berry rose', bg: '#FBF1F3', surface: '#F4E4E8', ink: '#2B1A20', accent: '#B84A6E' },
+    { id: 'matcha', mode: 'light', zh: '抹茶綠', en: 'Matcha Paper', descZh: '宇治淺紙 · 焙茶深綠', descEn: 'Matcha paper · tea green', bg: '#EFF3EC', surface: '#E3EAE0', ink: '#1B241C', accent: '#47734B' }
+  ];
+  const THEME_DEFS = Object.fromEntries(THEME_LIST.map(t => [t.id, t]));
   const isEn = () => document.documentElement.lang === 'en';
   const L = (zh, en) => (isEn() ? en : zh);
   const esc = s => String(s ?? '').replace(/[&<>"']/g, ch => (
@@ -20,7 +28,7 @@
   function readSavedTheme() {
     try {
       const v = localStorage.getItem(THEME_KEY);
-      return v === 'washi' || v === 'sumi' ? v : 'sumi';
+      return v && THEME_DEFS[v] ? v : 'sumi';
     } catch (e) {
       return 'sumi';
     }
@@ -29,19 +37,21 @@
   let currentTheme = readSavedTheme();
 
   function applyTheme(theme, persist = true) {
-    currentTheme = theme === 'washi' ? 'washi' : 'sumi';
+    const def = THEME_DEFS[theme] || THEME_DEFS.sumi;
+    currentTheme = def.id;
     const root = document.documentElement;
     root.dataset.theme = currentTheme;
-    root.style.colorScheme = currentTheme === 'washi' ? 'light' : 'dark';
+    root.style.colorScheme = def.mode === 'light' ? 'light' : 'dark';
 
     const themeMeta = document.querySelector('meta[name="theme-color"]');
     if (themeMeta) {
-      themeMeta.content = currentTheme === 'washi' ? '#F3EEE4' : '#11100F';
+      themeMeta.content = def.bg;
     }
     if (persist) {
       try { localStorage.setItem(THEME_KEY, currentTheme); } catch (e) {}
     }
     updateThemeButton();
+    refreshThemePickers();
   }
 
   // =========================================================================
@@ -88,6 +98,31 @@
       --grain-op: 0.032;
     }
 
+    html[data-theme="ocean"] {
+      color-scheme: dark;
+      --bg: #0E151D;
+      --surface: #141E29;
+      --surface-2: #1C2836;
+      --input-bg: #101923;
+      --ink: #E6EFF6;
+      --ink-2: #9BB1C6;
+      --ink-3: #6C8399;
+      --accent: #6EB2D4;
+      --accent-hover: #88C5E3;
+      --accent-ink: #0C141C;
+      --accent-soft: rgba(110, 178, 212, 0.14);
+      --accent-border: rgba(110, 178, 212, 0.44);
+      --rule: rgba(230, 239, 246, 0.12);
+      --rule-strong: rgba(230, 239, 246, 0.24);
+      --danger: #D97676;
+      --danger-soft: rgba(217, 118, 118, 0.12);
+      --danger-border: rgba(217, 118, 118, 0.42);
+      --success: #66B58B;
+      --cup-b: #D9A462;
+      --backdrop: rgba(8, 13, 19, 0.80);
+      --grain-op: 0.032;
+    }
+
     html[data-theme="washi"] {
       color-scheme: light;
       --bg: #F3EEE4;
@@ -111,6 +146,56 @@
       --cup-b: #3F6F8A;
       --backdrop: rgba(29, 26, 23, 0.56);
       --grain-op: 0.038;
+    }
+
+    html[data-theme="sakura"] {
+      color-scheme: light;
+      --bg: #FBF1F3;
+      --surface: #F4E4E8;
+      --surface-2: #ECD7DC;
+      --input-bg: #FFF9FA;
+      --ink: #2B1A20;
+      --ink-2: #6B4D57;
+      --ink-3: #967580;
+      --accent: #B84A6E;
+      --accent-hover: #9C3859;
+      --accent-ink: #FFF7F9;
+      --accent-soft: rgba(184, 74, 110, 0.11);
+      --accent-border: rgba(184, 74, 110, 0.38);
+      --rule: rgba(43, 26, 32, 0.12);
+      --rule-strong: rgba(43, 26, 32, 0.24);
+      --danger: #B33E4A;
+      --danger-soft: rgba(179, 62, 74, 0.10);
+      --danger-border: rgba(179, 62, 74, 0.36);
+      --success: #3E7B5A;
+      --cup-b: #53729B;
+      --backdrop: rgba(43, 26, 32, 0.54);
+      --grain-op: 0.032;
+    }
+
+    html[data-theme="matcha"] {
+      color-scheme: light;
+      --bg: #EFF3EC;
+      --surface: #E3EAE0;
+      --surface-2: #D6E0D2;
+      --input-bg: #F8FBF7;
+      --ink: #1B241C;
+      --ink-2: #4D5E4F;
+      --ink-3: #758777;
+      --accent: #47734B;
+      --accent-hover: #385E3B;
+      --accent-ink: #F5FBF5;
+      --accent-soft: rgba(71, 115, 75, 0.11);
+      --accent-border: rgba(71, 115, 75, 0.38);
+      --rule: rgba(27, 36, 28, 0.12);
+      --rule-strong: rgba(27, 36, 28, 0.24);
+      --danger: #AE453E;
+      --danger-soft: rgba(174, 69, 62, 0.10);
+      --danger-border: rgba(174, 69, 62, 0.36);
+      --success: #3A7A4C;
+      --cup-b: #3E6C85;
+      --backdrop: rgba(27, 36, 28, 0.54);
+      --grain-op: 0.032;
     }
 
     html {
@@ -285,6 +370,124 @@
     }
     .cv-sync-dot.online { background: var(--success); }
     .cv-sync-dot.warn { background: var(--accent); }
+
+    .cv-theme-dot {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      border: 1.5px solid var(--rule-strong);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+    .cv-theme-dot::after {
+      content: "";
+      width: 5px;
+      height: 5px;
+      border-radius: 50%;
+      background: var(--dot-accent, var(--accent));
+    }
+    html body #cvThemeDialog {
+      box-sizing: border-box;
+      width: min(560px, calc(100vw - 24px)) !important;
+      max-width: calc(100vw - 24px) !important;
+      max-height: 88vh;
+      overflow: auto;
+      padding: 20px !important;
+      border-radius: 6px !important;
+      background: var(--bg) !important;
+      color: var(--ink) !important;
+      border: 1px solid var(--rule-strong) !important;
+    }
+    .cv-theme-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
+      gap: 10px;
+      margin-top: 10px;
+    }
+    @media (max-width: 520px) {
+      .cv-theme-grid { grid-template-columns: 1fr; }
+    }
+    html body button.cv-theme-card {
+      display: flex !important;
+      align-items: center;
+      gap: 12px;
+      width: 100%;
+      margin: 0 !important;
+      padding: 10px 12px !important;
+      min-height: 60px !important;
+      border-radius: 6px !important;
+      background: var(--surface) !important;
+      border: 1.5px solid var(--rule) !important;
+      text-align: left;
+      color: var(--ink) !important;
+    }
+    html body button.cv-theme-card:hover {
+      border-color: var(--accent) !important;
+      background: var(--surface-2) !important;
+    }
+    html body button.cv-theme-card[aria-pressed="true"] {
+      border-color: var(--accent) !important;
+      box-shadow: inset 0 0 0 1px var(--accent) !important;
+      background: var(--accent-soft) !important;
+    }
+    .cv-theme-preview {
+      width: 42px;
+      height: 42px;
+      border-radius: 6px;
+      border: 1px solid rgba(128, 128, 128, 0.28);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      padding: 6px;
+      box-sizing: border-box;
+      flex-shrink: 0;
+    }
+    .cv-theme-preview-bar {
+      height: 6px;
+      width: 100%;
+      border-radius: 2px;
+    }
+    .cv-theme-preview-dots {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .cv-theme-preview-dots span {
+      width: 9px;
+      height: 9px;
+      border-radius: 50%;
+      display: inline-block;
+    }
+    .cv-theme-meta {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      min-width: 0;
+      flex: 1;
+    }
+    .cv-theme-name-row {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+    .cv-theme-name-row strong {
+      font-size: 14px;
+      color: var(--ink);
+    }
+    .cv-theme-badge {
+      font-size: 10.5px;
+      padding: 1px 6px;
+      border-radius: 3px;
+      border: 1px solid var(--rule-strong);
+      color: var(--ink-2);
+    }
+    .cv-theme-desc {
+      font-size: 11.5px;
+      color: var(--ink-2);
+    }
 
     html #coffeeAppHeader #coffeeLanguageSwitch button::before,
     #coffeeLanguageSwitch button::before {
@@ -1730,13 +1933,140 @@
   function updateThemeButton() {
     const btn = document.getElementById('cvThemeToggle');
     if (!btn) return;
+    const def = THEME_DEFS[currentTheme] || THEME_DEFS.sumi;
     const en = isEn();
-    const isWashi = currentTheme === 'washi';
-    const iconKey = isWashi ? 'moon' : 'sun';
-    const label = isWashi ? (en ? 'Sumi' : '深夜吧台') : (en ? 'Washi' : '和紙淺色');
-    const title = isWashi ? (en ? 'Switch to Sumi Dark theme' : '切換為深夜吧台深色') : (en ? 'Switch to Washi Light theme' : '切換為和紙手札淺色');
-    btn.setAttribute('aria-pressed', String(isWashi));
-    setBtnIcon(btn, iconKey, label, title);
+    const label = en ? def.en : def.zh;
+    const title = en ? `Appearance theme: ${def.en} (click to choose from 5 colors)` : `色彩風格：${def.zh}（點選更換 5 種主題配色）`;
+    const key = [def.id, label, title, en ? 'en' : 'zh'].join('|');
+    btn.setAttribute('aria-haspopup', 'dialog');
+    btn.setAttribute('aria-pressed', 'false');
+    btn.title = title;
+    btn.setAttribute('aria-label', title);
+    if (btn.dataset.cvThemeBtnKey !== key || !btn.querySelector('.cv-theme-dot')) {
+      btn.dataset.cvThemeBtnKey = key;
+      btn.innerHTML = `<span class="cv-btn-content"><span class="cv-theme-dot" style="background:${def.bg};--dot-accent:${def.accent}"></span><span>${esc(label)}</span></span>`;
+    }
+  }
+
+  function renderThemeSwatchGrid(container) {
+    if (!container) return;
+    const en = isEn();
+    container.replaceChildren();
+    for (const t of THEME_LIST) {
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'cv-theme-card';
+      btn.setAttribute('aria-pressed', String(currentTheme === t.id));
+      btn.setAttribute('data-coffee-user-text', 'true');
+      const modeBadge = t.mode === 'light' ? (en ? 'Light' : '淺色') : (en ? 'Dark' : '深色');
+      const checkMark = currentTheme === t.id ? ' ✓' : '';
+      btn.innerHTML = `
+        <span class="cv-theme-preview" style="background:${t.bg}" aria-hidden="true">
+          <span class="cv-theme-preview-bar" style="background:${t.surface}"></span>
+          <span class="cv-theme-preview-dots">
+            <span style="background:${t.ink}"></span>
+            <span style="background:${t.accent}"></span>
+          </span>
+        </span>
+        <span class="cv-theme-meta">
+          <span class="cv-theme-name-row">
+            <strong>${esc(en ? t.en : t.zh)}${checkMark}</strong>
+            <span class="cv-theme-badge">${esc(modeBadge)}</span>
+          </span>
+          <span class="cv-theme-desc">${esc(en ? t.descEn : t.descZh)}</span>
+        </span>
+      `;
+      btn.onclick = () => {
+        applyTheme(t.id, true);
+      };
+      container.append(btn);
+    }
+  }
+
+  let themeDialog = null;
+  function refreshThemePickers() {
+    const modalGrid = document.getElementById('cvThemeModalGrid');
+    if (modalGrid) renderThemeSwatchGrid(modalGrid);
+    const settingsGrid = document.getElementById('cvSettingsThemeGrid');
+    if (settingsGrid) renderThemeSwatchGrid(settingsGrid);
+    const settingsTitle = document.getElementById('cvSettingsThemeTitle');
+    if (settingsTitle) settingsTitle.textContent = L('🎨 介面色彩風格（5 款主題）', '🎨 Appearance Theme (5 Styles)');
+    const settingsHint = document.getElementById('cvSettingsThemeHint');
+    if (settingsHint) settingsHint.textContent = L('選擇適合目前光線與心情的配色，分享圖卡也會預設套用同款風格。', 'Pick a color palette for the interface; PNG share cards default to your selected theme.');
+  }
+
+  function openThemeDialog() {
+    const en = isEn();
+    if (!themeDialog) {
+      themeDialog = document.createElement('dialog');
+      themeDialog.id = 'cvThemeDialog';
+      themeDialog.setAttribute('data-coffee-user-text', 'true');
+      themeDialog.onclick = e => {
+        if (e.target === themeDialog) themeDialog.close();
+      };
+      document.body.append(themeDialog);
+    }
+    themeDialog.replaceChildren();
+
+    const head = document.createElement('div');
+    head.className = 'cv-quick-head';
+    head.innerHTML = `<h3>🎨 ${en ? 'Choose Color Theme' : '選擇介面色彩風格'}</h3>`;
+    const closeBtn = document.createElement('button');
+    closeBtn.type = 'button';
+    closeBtn.textContent = en ? 'Close ✕' : '關閉 ✕';
+    closeBtn.onclick = () => themeDialog.close();
+    head.append(closeBtn);
+
+    const hint = document.createElement('p');
+    hint.className = 'hint';
+    hint.style.margin = '0 0 6px';
+    hint.textContent = en
+      ? 'Pick a light or dark color style. Changes apply immediately and sync with PNG share cards.'
+      : '挑選喜愛的深淺配色，點擊色票即可即時套用；「產生分享卡」也會自動帶入同款色系。';
+
+    const grid = document.createElement('div');
+    grid.id = 'cvThemeModalGrid';
+    grid.className = 'cv-theme-grid';
+    renderThemeSwatchGrid(grid);
+
+    const actions = document.createElement('div');
+    actions.className = 'cv-quick-actions';
+    const doneBtn = document.createElement('button');
+    doneBtn.type = 'button';
+    doneBtn.className = 'cv-primary-cta';
+    doneBtn.style.minHeight = '40px';
+    doneBtn.textContent = en ? 'Done' : '完成';
+    doneBtn.onclick = () => themeDialog.close();
+    actions.append(doneBtn);
+
+    themeDialog.append(head, hint, grid, actions);
+    themeDialog.showModal();
+  }
+
+  function ensureSettingsThemeBox() {
+    const settingsSec = document.getElementById('settings');
+    if (!settingsSec) return;
+    let box = document.getElementById('cvSettingsThemeBox');
+    if (!box) {
+      box = document.createElement('article');
+      box.id = 'cvSettingsThemeBox';
+      box.className = 'box';
+      box.setAttribute('data-coffee-user-text', 'true');
+      const title = document.createElement('h3');
+      title.id = 'cvSettingsThemeTitle';
+      const hint = document.createElement('p');
+      hint.id = 'cvSettingsThemeHint';
+      hint.className = 'hint';
+      hint.style.margin = '4px 0 8px';
+      const grid = document.createElement('div');
+      grid.id = 'cvSettingsThemeGrid';
+      grid.className = 'cv-theme-grid';
+      box.append(title, hint, grid);
+      const cloudBox = document.getElementById('cloudSyncBox');
+      if (cloudBox) cloudBox.after(box);
+      else settingsSec.prepend(box);
+    }
+    refreshThemePickers();
   }
 
   function buildChronometerTicksSvg() {
@@ -1870,7 +2200,7 @@
       themeBtn.className = 'cv-theme-toggle';
       themeBtn.setAttribute('data-coffee-user-text', 'true');
       themeBtn.onclick = () => {
-        applyTheme(currentTheme === 'sumi' ? 'washi' : 'sumi', true);
+        openThemeDialog();
       };
 
       actions.append(syncPill, themeBtn);
@@ -3429,6 +3759,7 @@
   function initVisualUI() {
     applyTheme(currentTheme, false);
     ensureHeaderLayout();
+    ensureSettingsThemeBox();
     updateSyncPill();
     enhanceCompactButtons();
     renderStudioView();
@@ -3514,6 +3845,8 @@
       if (document.documentElement.lang !== lastLang) {
         lastLang = document.documentElement.lang;
         updateThemeButton();
+        refreshThemePickers();
+        if (themeDialog && themeDialog.open) openThemeDialog();
         updateSyncPill();
         enhanceCompactButtons();
         renderStudioView(true);

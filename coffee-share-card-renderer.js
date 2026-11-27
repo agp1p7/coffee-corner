@@ -21,6 +21,16 @@
       accent: '#D98A4E',
       glint: '#F8E2C8'
     },
+    ocean: {
+      bg: '#0E151D',
+      surface: '#141E29',
+      border: '#2E4359',
+      rule: '#243547',
+      ink: '#E6EFF6',
+      ink2: '#9BB1C6',
+      accent: '#6EB2D4',
+      glint: '#CBE8F7'
+    },
     washi: {
       bg: '#F3EEE4',
       surface: '#FAF6EE',
@@ -30,6 +40,26 @@
       ink2: '#6E655A',
       accent: '#A85A24',
       glint: '#FFF4E6'
+    },
+    sakura: {
+      bg: '#FBF1F3',
+      surface: '#FFF8F9',
+      border: '#DDBAC4',
+      rule: '#EBD3DA',
+      ink: '#2B1A20',
+      ink2: '#75545E',
+      accent: '#B84A6E',
+      glint: '#FFEAF0'
+    },
+    matcha: {
+      bg: '#EFF3EC',
+      surface: '#F7FAF5',
+      border: '#B8C9B5',
+      rule: '#D0DDD0',
+      ink: '#1B241C',
+      ink2: '#556657',
+      accent: '#47734B',
+      glint: '#E9F4EA'
     }
   };
 
@@ -168,7 +198,7 @@
     const story = options.story === true;
     const h = story ? 1920 : 1080;
     const L = (a, b) => (options.lang === 'en' ? b : a);
-    const pal = options.theme === 'washi' ? THEMES.washi : THEMES.sumi;
+    const pal = THEMES[options.theme] || THEMES.sumi;
 
     if (!Number.isFinite(r.dose) || r.dose <= 0 || !Number.isFinite(r.temp) || !Number.isFinite(c.seconds) || c.seconds < 0) {
       throw Error('Invalid brew parameters');
@@ -379,5 +409,5 @@
     return { fits, width: 1080, height: h, totals: x };
   }
 
-  return Object.freeze({ draw, totals, block, flavorSections: true, dualTheme: true });
+  return Object.freeze({ draw, totals, block, flavorSections: true, dualTheme: true, themes: Object.keys(THEMES) });
 });
