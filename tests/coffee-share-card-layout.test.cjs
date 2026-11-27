@@ -18,7 +18,7 @@ test('multi-line flavor, long tasting note, and detailed grinder gear fit in bot
   c.recipe.grindGuide='中細研磨 · 1Zpresso X-Ultra 刻度 1.5.5–2.1.2（約 650–780 μm · 鎖死歸零）';
   c.taste='入口白桃與柑橘果酸明亮，中段呈現細緻茉莉花與紅茶甜韻，冷卻後仍乾淨滑順。';
   for(const story of [false,true]){
-    for(const theme of ['sumi','ocean','washi','sakura','matcha']){
+    for(const theme of ['sumi','ocean','washi','sakura','matcha','mocha']){
       const r=render(c,{story,theme,gear:true,date:true});
       A.equal(r.result.fits,true,`expected fits=true for story=${story}, theme=${theme}`);
       A.match(r.text,/X-Ultra/);

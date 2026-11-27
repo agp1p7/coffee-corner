@@ -60,6 +60,16 @@
       ink2: '#556657',
       accent: '#47734B',
       glint: '#E9F4EA'
+    },
+    mocha: {
+      bg: '#EFEDB6',
+      surface: '#F7F6D9',
+      border: '#C4B38E',
+      rule: '#DDD8A8',
+      ink: '#36251D',
+      ink2: '#6E5042',
+      accent: '#A47864',
+      glint: '#FFFDF0'
     }
   };
 

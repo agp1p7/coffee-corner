@@ -16,7 +16,8 @@
     { id: 'ocean', mode: 'dark', zh: '海霧藍', en: 'Ocean Mist', descZh: '深海靜謐 · 霧藍光澤', descEn: 'Midnight slate · misty blue', bg: '#0E151D', surface: '#141E29', ink: '#E6EFF6', accent: '#6EB2D4' },
     { id: 'washi', mode: 'light', zh: '和紙手札', en: 'Washi Light', descZh: '溫潤米紙 · 陶土棕', descEn: 'Warm paper · terracotta', bg: '#F3EEE4', surface: '#EBE4D6', ink: '#1D1A17', accent: '#A6542B' },
     { id: 'sakura', mode: 'light', zh: '櫻花粉', en: 'Sakura Rose', descZh: '柔霧櫻粉 · 莓果玫瑰', descEn: 'Soft sakura · berry rose', bg: '#FBF1F3', surface: '#F4E4E8', ink: '#2B1A20', accent: '#B84A6E' },
-    { id: 'matcha', mode: 'light', zh: '抹茶綠', en: 'Matcha Paper', descZh: '宇治淺紙 · 焙茶深綠', descEn: 'Matcha paper · tea green', bg: '#EFF3EC', surface: '#E3EAE0', ink: '#1B241C', accent: '#47734B' }
+    { id: 'matcha', mode: 'light', zh: '抹茶綠', en: 'Matcha Paper', descZh: '宇治淺紙 · 焙茶深綠', descEn: 'Matcha paper · tea green', bg: '#EFF3EC', surface: '#E3EAE0', ink: '#1B241C', accent: '#47734B' },
+    { id: 'mocha', mode: 'light', zh: '摩卡奶油', en: 'Mocha Cream', descZh: '奶油柔黃 · 摩卡慕斯', descEn: 'Butter cream · mocha mousse', bg: '#EFEDB6', surface: '#F6F5D4', ink: '#36251D', accent: '#A47864' }
   ];
   const THEME_DEFS = Object.fromEntries(THEME_LIST.map(t => [t.id, t]));
   const isEn = () => document.documentElement.lang === 'en';
@@ -195,6 +196,31 @@
       --success: #3A7A4C;
       --cup-b: #3E6C85;
       --backdrop: rgba(27, 36, 28, 0.54);
+      --grain-op: 0.032;
+    }
+
+    html[data-theme="mocha"] {
+      color-scheme: light;
+      --bg: #EFEDB6;
+      --surface: #F6F5D4;
+      --surface-2: #E4E1A2;
+      --input-bg: #FCFBEF;
+      --ink: #36251D;
+      --ink-2: #6B4D3F;
+      --ink-3: #876353;
+      --accent: #A47864;
+      --accent-hover: #8C6351;
+      --accent-ink: #FFFDF2;
+      --accent-soft: rgba(164, 120, 100, 0.14);
+      --accent-border: rgba(164, 120, 100, 0.45);
+      --rule: rgba(54, 37, 29, 0.14);
+      --rule-strong: rgba(54, 37, 29, 0.26);
+      --danger: #A93F3A;
+      --danger-soft: rgba(169, 63, 58, 0.11);
+      --danger-border: rgba(169, 63, 58, 0.38);
+      --success: #3D7348;
+      --cup-b: #4B6E8C;
+      --backdrop: rgba(54, 37, 29, 0.54);
       --grain-op: 0.032;
     }
 
@@ -1936,7 +1962,7 @@
     const def = THEME_DEFS[currentTheme] || THEME_DEFS.sumi;
     const en = isEn();
     const label = en ? def.en : def.zh;
-    const title = en ? `Appearance theme: ${def.en} (click to choose from 5 colors)` : `色彩風格：${def.zh}（點選更換 5 種主題配色）`;
+    const title = en ? `Appearance theme: ${def.en} (click to choose from ${THEME_LIST.length} colors)` : `色彩風格：${def.zh}（點選更換 ${THEME_LIST.length} 種主題配色）`;
     const key = [def.id, label, title, en ? 'en' : 'zh'].join('|');
     btn.setAttribute('aria-haspopup', 'dialog');
     btn.setAttribute('aria-pressed', 'false');
@@ -1990,7 +2016,7 @@
     const settingsGrid = document.getElementById('cvSettingsThemeGrid');
     if (settingsGrid) renderThemeSwatchGrid(settingsGrid);
     const settingsTitle = document.getElementById('cvSettingsThemeTitle');
-    if (settingsTitle) settingsTitle.textContent = L('🎨 介面色彩風格（5 款主題）', '🎨 Appearance Theme (5 Styles)');
+    if (settingsTitle) settingsTitle.textContent = L(`🎨 介面色彩風格（${THEME_LIST.length} 款主題）`, `🎨 Appearance Theme (${THEME_LIST.length} Styles)`);
     const settingsHint = document.getElementById('cvSettingsThemeHint');
     if (settingsHint) settingsHint.textContent = L('選擇適合目前光線與心情的配色，分享圖卡也會預設套用同款風格。', 'Pick a color palette for the interface; PNG share cards default to your selected theme.');
   }
